@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "lwrb.h"
 #include <stdbool.h>
+#include <stdatomic.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -72,18 +73,17 @@ only output gpgga msgs */
 static lwrb_t Neo6mUartRingBuf;
 static uint8_t Neo6mUartBuf[NEO_6M_UART_TRIGGER*NEO_6M_BUFFER_MSGS];
 static uint8_t Uart2RxBuf[UART_RX_INCREMENT];
-static volatile bool Neo6mDataReadyFlag = false;
-static volatile bool Neo6mUartRingBufBusy = false;
-volatile bool myvar = false;
 
+static volatile atomic_bool Neo6mDataReadyFlag = ATOMIC_VAR_INIT(false);
+static volatile atomic_bool Neo6mUartRingBufBusy = ATOMIC_VAR_INIT(false);
 
 static uint8_t Neo6mDataBuf[NEO_6M_DATA_SIZE];
 
 size_t Stm32_IORead(void* DataPtr, size_t ReadSize)
 {
-	Neo6mUartRingBufBusy = true;
+	atomic_store_explicit(&Neo6mUartRingBufBusy, true, memory_order_seq_cst);
 	size_t ReadBytes = lwrb_read(&Neo6mUartRingBuf, DataPtr, ReadSize);
-	Neo6mUartRingBufBusy = false;
+	atomic_store_explicit(&Neo6mUartRingBufBusy, false, memory_order_seq_cst);
 	return ReadBytes;
 }
 /* USER CODE END 0 */
@@ -126,32 +126,24 @@ int main(void)
 
   char Msg1[] = "Welcome to neo6m IO read function test! \n ";
   char Msg3[] = "No more bytes to read! \n";
-	char Msg2[] = "\n \n !!!!!!!!  BUFFER HAD TO BE RESET !!!!!!!! \n \n ";
-  HAL_UART_Transmit(&huart4, (uint8_t *)Msg1, sizeof(Msg1), 100);
+  char Msg2[] = "\n \n !!!!!!!!  BUFFER HAD TO BE RESET !!!!!!!! \n \n ";
+  //HAL_UART_Transmit(&huart4, (uint8_t *)Msg1, sizeof(Msg1), 100);
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-    /* USER CODE END WHILE */
-	  if (myvar)
-	  {
-		  HAL_UART_Transmit(&huart4, (uint8_t *)Msg2, sizeof(Msg2), 100);
-		  myvar = false;
-	  }
-
-	if (Neo6mDataReadyFlag)
+	if (atomic_load_explicit(&Neo6mDataReadyFlag, memory_order_acquire))
 	{
 		int ReadBytes = Stm32_IORead(Neo6mDataBuf,NEO_6M_DATA_SIZE);
 		while (ReadBytes == NEO_6M_DATA_SIZE)
 		{
 		//handle data
-		//HAL_UART_Transmit(&huart4, (uint8_t *)Msg2, sizeof(Msg2), 100);
 		HAL_UART_Transmit(&huart4, Neo6mDataBuf, NEO_6M_DATA_SIZE, 100);
 		ReadBytes = Stm32_IORead(Neo6mDataBuf,NEO_6M_DATA_SIZE);
 		}
 		HAL_UART_Transmit(&huart4, (uint8_t *)Msg3, sizeof(Msg3), 100); //This gets sent so, the whole chunk is processed before a new one arrives
-		Neo6mDataReadyFlag = false; //This race condition is not a serious problem, since it only causes 10B to be added */
+		atomic_store_explicit(&Neo6mDataReadyFlag, false, memory_order_seq_cst); //This race condition is not a serious problem, since it only causes 10B to be added */
 	}
     /* USER CODE BEGIN 3 */
   }
@@ -162,14 +154,14 @@ int main(void)
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	size_t FreeBytes;
+	HAL_StatusTypeDef status;
 
 	FreeBytes = lwrb_get_free(&Neo6mUartRingBuf);
     if (FreeBytes < UART_RX_SAFETY_MARGIN)
     {
-    	if (!Neo6mUartRingBufBusy)
+    	if (!atomic_load_explicit(&Neo6mUartRingBufBusy, memory_order_acquire))
     	{
     		lwrb_reset(&Neo6mUartRingBuf);
-    		myvar = true;
     	}
     }
 
@@ -177,7 +169,7 @@ void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 
     if (lwrb_get_full(&Neo6mUartRingBuf) >= NEO_6M_UART_TRIGGER )
     {
-    	Neo6mDataReadyFlag = true;
+    	atomic_store_explicit(&Neo6mDataReadyFlag, true, memory_order_seq_cst);
     }
 
     HAL_UART_Receive_IT(&huart2, Uart2RxBuf, UART_RX_INCREMENT);
@@ -222,6 +214,8 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
+
+
 }
 
 /**
