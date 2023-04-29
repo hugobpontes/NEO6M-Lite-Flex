@@ -61,23 +61,29 @@ static void MX_USART2_UART_Init(void);
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
 #define UART_RX_INCREMENT 10
+#define UART_RX_SAFETY_MARGIN 100
 /*NEO_6M_UART_TRIGGER must be enough to hold one complete batch from neo6m,
 to make sure that a full GPGGA msg is there. To reduce this size, the gps needed to be configured to
 only output gpgga msgs */
 #define NEO_6M_UART_TRIGGER 750
-#define NEO_6M_DATA_SIZE NEO_6M_UART_TRIGGER
+#define NEO_6M_DATA_SIZE 5
 #define NEO_6M_BUFFER_MSGS 2
 
 static lwrb_t Neo6mUartRingBuf;
 static uint8_t Neo6mUartBuf[NEO_6M_UART_TRIGGER*NEO_6M_BUFFER_MSGS];
 static uint8_t Uart2RxBuf[UART_RX_INCREMENT];
-static bool Neo6mDataReadyFlag = false;
+static volatile bool Neo6mDataReadyFlag = false;
+static volatile bool Neo6mUartRingBufBusy = false;
+volatile bool myvar = false;
+
+
 static uint8_t Neo6mDataBuf[NEO_6M_DATA_SIZE];
 
 size_t Stm32_IORead(void* DataPtr, size_t ReadSize)
 {
+	Neo6mUartRingBufBusy = true;
 	size_t ReadBytes = lwrb_read(&Neo6mUartRingBuf, DataPtr, ReadSize);
-
+	Neo6mUartRingBufBusy = false;
 	return ReadBytes;
 }
 /* USER CODE END 0 */
@@ -118,24 +124,34 @@ int main(void)
   HAL_UART_Receive_IT(&huart2, Uart2RxBuf, UART_RX_INCREMENT);
   /* USER CODE END 2 */
 
-  char Msg1[] = "\n Welcome to neo6m IO read function test! ";
+  char Msg1[] = "Welcome to neo6m IO read function test! \n ";
+  char Msg3[] = "No more bytes to read! \n";
+	char Msg2[] = "\n \n !!!!!!!!  BUFFER HAD TO BE RESET !!!!!!!! \n \n ";
   HAL_UART_Transmit(&huart4, (uint8_t *)Msg1, sizeof(Msg1), 100);
 
-  char Msg2[] = "\n New Batch: ";
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
     /* USER CODE END WHILE */
-
+	  if (myvar)
+	  {
+		  HAL_UART_Transmit(&huart4, (uint8_t *)Msg2, sizeof(Msg2), 100);
+		  myvar = false;
+	  }
 
 	if (Neo6mDataReadyFlag)
 	{
-		Stm32_IORead(Neo6mDataBuf,NEO_6M_DATA_SIZE);
+		int ReadBytes = Stm32_IORead(Neo6mDataBuf,NEO_6M_DATA_SIZE);
+		while (ReadBytes == NEO_6M_DATA_SIZE)
+		{
 		//handle data
-		HAL_UART_Transmit(&huart4, (uint8_t *)Msg2, sizeof(Msg2), 100);
+		//HAL_UART_Transmit(&huart4, (uint8_t *)Msg2, sizeof(Msg2), 100);
 		HAL_UART_Transmit(&huart4, Neo6mDataBuf, NEO_6M_DATA_SIZE, 100);
-		Neo6mDataReadyFlag = false;
+		ReadBytes = Stm32_IORead(Neo6mDataBuf,NEO_6M_DATA_SIZE);
+		}
+		HAL_UART_Transmit(&huart4, (uint8_t *)Msg3, sizeof(Msg3), 100); //This gets sent so, the whole chunk is processed before a new one arrives
+		Neo6mDataReadyFlag = false; //This race condition is not a serious problem, since it only causes 10B to be added */
 	}
     /* USER CODE BEGIN 3 */
   }
@@ -145,11 +161,25 @@ int main(void)
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
+	size_t FreeBytes;
+
+	FreeBytes = lwrb_get_free(&Neo6mUartRingBuf);
+    if (FreeBytes < UART_RX_SAFETY_MARGIN)
+    {
+    	if (!Neo6mUartRingBufBusy)
+    	{
+    		lwrb_reset(&Neo6mUartRingBuf);
+    		myvar = true;
+    	}
+    }
+
     lwrb_write(&Neo6mUartRingBuf, Uart2RxBuf, UART_RX_INCREMENT);
+
     if (lwrb_get_full(&Neo6mUartRingBuf) >= NEO_6M_UART_TRIGGER )
     {
     	Neo6mDataReadyFlag = true;
     }
+
     HAL_UART_Receive_IT(&huart2, Uart2RxBuf, UART_RX_INCREMENT);
 }
 
