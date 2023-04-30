@@ -66,18 +66,18 @@ static void MX_USART2_UART_Init(void);
 /*NEO_6M_UART_TRIGGER must be enough to hold one complete batch from neo6m,
 to make sure that a full GPGGA msg is there. To reduce this size, the gps needed to be configured to
 only output gpgga msgs */
-#define NEO_6M_UART_TRIGGER 750
-#define NEO_6M_DATA_SIZE 5
-#define NEO_6M_BUFFER_MSGS 2
+#define NEO_6M_TYPICAL_FRAME_SIZE 750
 
 static lwrb_t Neo6mUartRingBuf;
-static uint8_t Neo6mUartBuf[NEO_6M_UART_TRIGGER*NEO_6M_BUFFER_MSGS];
+static uint8_t Neo6mUartBuf[2*NEO_6M_TYPICAL_FRAME_SIZE+UART_RX_SAFETY_MARGIN];
 static uint8_t Uart2RxBuf[UART_RX_INCREMENT];
 
 static volatile atomic_bool Neo6mDataReadyFlag = ATOMIC_VAR_INIT(false);
 static volatile atomic_bool Neo6mUartRingBufBusy = ATOMIC_VAR_INIT(false);
+static volatile bool preempt_flag = false;
+static volatile bool force_flag = false;
 
-static uint8_t Neo6mDataBuf[NEO_6M_DATA_SIZE];
+static uint8_t Neo6mDataBuf[NEO_6M_TYPICAL_FRAME_SIZE];
 
 size_t Stm32_IORead(void* DataPtr, size_t ReadSize)
 {
@@ -120,29 +120,38 @@ int main(void)
   MX_GPIO_Init();
   MX_UART4_Init();
   MX_USART2_UART_Init();
+
   /* USER CODE BEGIN 2 */
   HAL_UART_Receive_IT(&huart2, Uart2RxBuf, UART_RX_INCREMENT);
   /* USER CODE END 2 */
 
   char Msg1[] = "Welcome to neo6m IO read function test! \n ";
-  char Msg3[] = "No more bytes to read! \n";
-  char Msg2[] = "\n \n !!!!!!!!  BUFFER HAD TO BE RESET !!!!!!!! \n \n ";
-  //HAL_UART_Transmit(&huart4, (uint8_t *)Msg1, sizeof(Msg1), 100);
+  char Msg2[] = "\n \n !!!!!!!!  BUFFER HAD TO BE PREEMPTIVELY RESET !!!!!!!! \n \n ";
+  char Msg3[] = "\n \n !!!!!!!!  BUFFER HAD TO BE FORCIBLY RESET !!!!!!!! \n \n ";
+
+  HAL_UART_Transmit(&huart4, (uint8_t *)Msg1, sizeof(Msg1), 100);
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
+	if (preempt_flag)
+	{
+		HAL_UART_Transmit(&huart4, (uint8_t *)Msg2, sizeof(Msg2), 100);
+		preempt_flag = false;
+	}
+	if (force_flag)
+	{
+		HAL_UART_Transmit(&huart4, (uint8_t *)Msg3, sizeof(Msg3), 100);
+		force_flag = false;
+	}
+
 	if (atomic_load_explicit(&Neo6mDataReadyFlag, memory_order_acquire))
 	{
-		int ReadBytes = Stm32_IORead(Neo6mDataBuf,NEO_6M_DATA_SIZE);
-		while (ReadBytes == NEO_6M_DATA_SIZE)
-		{
-		//handle data
-		HAL_UART_Transmit(&huart4, Neo6mDataBuf, NEO_6M_DATA_SIZE, 100);
-		ReadBytes = Stm32_IORead(Neo6mDataBuf,NEO_6M_DATA_SIZE);
-		}
-		HAL_UART_Transmit(&huart4, (uint8_t *)Msg3, sizeof(Msg3), 100); //This gets sent so, the whole chunk is processed before a new one arrives
+		//lib func start
+		Stm32_IORead(Neo6mDataBuf,NEO_6M_TYPICAL_FRAME_SIZE);
+		//lib func end
+		HAL_UART_Transmit(&huart4, Neo6mDataBuf, NEO_6M_TYPICAL_FRAME_SIZE, 100);
 		atomic_store_explicit(&Neo6mDataReadyFlag, false, memory_order_seq_cst); //This race condition is not a serious problem, since it only causes 10B to be added */
 	}
     /* USER CODE BEGIN 3 */
@@ -154,20 +163,30 @@ int main(void)
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
 	size_t FreeBytes;
-	HAL_StatusTypeDef status;
+	//char ITMsg[11];
+
 
 	FreeBytes = lwrb_get_free(&Neo6mUartRingBuf);
+	/*sprintf(ITMsg,"%.10d$\n",FreeBytes);
+
+	HAL_UART_Transmit(&huart4,ITMsg, 11, 100);*/
     if (FreeBytes < UART_RX_SAFETY_MARGIN)
     {
-    	if (!atomic_load_explicit(&Neo6mUartRingBufBusy, memory_order_acquire))
+    	if (FreeBytes < UART_RX_INCREMENT)
     	{
-    		lwrb_reset(&Neo6mUartRingBuf);
+    		lwrb_skip(&Neo6mUartRingBuf,NEO_6M_TYPICAL_FRAME_SIZE);
+    		force_flag = true;
     	}
+    	else if (!atomic_load_explicit(&Neo6mUartRingBufBusy, memory_order_acquire))
+		{
+			lwrb_skip(&Neo6mUartRingBuf,NEO_6M_TYPICAL_FRAME_SIZE);
+			preempt_flag = true;
+		}
     }
 
     lwrb_write(&Neo6mUartRingBuf, Uart2RxBuf, UART_RX_INCREMENT);
 
-    if (lwrb_get_full(&Neo6mUartRingBuf) >= NEO_6M_UART_TRIGGER )
+    if (lwrb_get_full(&Neo6mUartRingBuf) >= NEO_6M_TYPICAL_FRAME_SIZE )
     {
     	atomic_store_explicit(&Neo6mDataReadyFlag, true, memory_order_seq_cst);
     }
