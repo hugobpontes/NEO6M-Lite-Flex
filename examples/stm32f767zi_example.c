@@ -151,7 +151,7 @@ int main(void)
 		//lib func start
 		Stm32_IORead(Neo6mDataBuf,NEO_6M_TYPICAL_FRAME_SIZE);
 		//lib func end
-		HAL_UART_Transmit(&huart4, Neo6mDataBuf, NEO_6M_TYPICAL_FRAME_SIZE, 100);
+		HAL_UART_Transmit(&huart4, Neo6mDataBuf, NEO_6M_TYPICAL_FRAME_SIZE, 200);
 		atomic_store_explicit(&Neo6mDataReadyFlag, false, memory_order_seq_cst); //This race condition is not a serious problem, since it only causes 10B to be added */
 	}
     /* USER CODE BEGIN 3 */

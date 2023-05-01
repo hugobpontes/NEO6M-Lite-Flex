@@ -11,7 +11,8 @@
 #include "Neo6mLiteFlex.h"
 
 
-UT_STATIC Neo6mLiteFlexStatus_t CopyFromBufferToRingBuffer(Neo6mLiteFlex_t Neo6mLiteFlex, size_t CopySize);
+
+UT_STATIC Neo6mLiteFlexStatus_t IOReadIntoToRingBuffer(Neo6mLiteFlex_t Neo6mLiteFlex, size_t CopySize);
 
 
 
