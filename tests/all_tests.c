@@ -9,11 +9,10 @@
 
 static void RunAllTests(void)
 {
-  RUN_TEST_GROUP(Neo6mTests);
+  RUN_TEST_GROUP(Neo6mMetaTests);
 }
 
 int main(int argc, const char * argv[])
 {
-  printf("Hello tests world\n");
   return UnityMain(argc, argv, RunAllTests);
 }
