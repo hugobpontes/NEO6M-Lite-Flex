@@ -3,22 +3,28 @@
 #include "unity.h"
 #include "unity_fixture.h"
 
+#include "Neo6mLiteFlex.h"
 
-TEST_GROUP(Neo6mMetaTests);
+#include "Neo6mPrivates.h"
 
-TEST_SETUP(Neo6mMetaTests)
+static Neo6mLiteFlex_t Neo6m;
+
+
+TEST_GROUP(Neo6m_MetaTests);
+
+TEST_SETUP(Neo6m_MetaTests)
 {
 	MockNeo6m_Create(20);
 }
 
-TEST_TEAR_DOWN(Neo6mMetaTests)
+TEST_TEAR_DOWN(Neo6m_MetaTests)
 {
 	MockNeo6m_VerifyComplete();
 	MockNeo6m_Destroy();
 
 }
 
-TEST(Neo6mMetaTests,GetMsReturnsDataAsSet)
+TEST(Neo6m_MetaTests,GetMsReturnsDataAsSet)
 {
 	MockNeo6m_ExpectGetMsAndReturn(50);
 	uint32_t A;
@@ -29,7 +35,7 @@ TEST(Neo6mMetaTests,GetMsReturnsDataAsSet)
 	/*Also tested that it fails if no get ms is called */
 }
 
-TEST(Neo6mMetaTests,FullByteReadCopiesAndReturnsSetDataLength)
+TEST(Neo6m_MetaTests,FullByteReadCopiesAndReturnsSetDataLength)
 {
 	uint8_t DataPtr[5];
 	uint8_t SrcPtr[5] = {1,2,3,4,5};
@@ -44,7 +50,7 @@ TEST(Neo6mMetaTests,FullByteReadCopiesAndReturnsSetDataLength)
 	/*Also tested that it fails if no read is called */
 }
 
-TEST(Neo6mMetaTests,IncompleteByteReadCopiesAndReturnsSetDataLength)
+TEST(Neo6m_MetaTests,IncompleteByteReadCopiesAndReturnsSetDataLength)
 {
 	uint8_t DataPtr[5];
 	uint8_t SrcPtr[3] = {1,2,3};
@@ -59,3 +65,25 @@ TEST(Neo6mMetaTests,IncompleteByteReadCopiesAndReturnsSetDataLength)
 	TEST_ASSERT_EQUAL(3,A);
 	/*Also tested that it fails if no read is called */
 }
+
+/*-----------------------------------------------------------------------------------------*/
+TEST_GROUP(Neo6m_CopyFromBufferToRingBuffer);
+
+TEST_SETUP(Neo6m_CopyFromBufferToRingBuffer)
+{
+	MockNeo6m_Create(20);
+	Neo6m = Neo6mLiteFlex_Create();
+}
+
+TEST_TEAR_DOWN(Neo6m_CopyFromBufferToRingBuffer)
+{
+	MockNeo6m_VerifyComplete();
+	MockNeo6m_Destroy();
+}
+
+TEST(Neo6m_CopyFromBufferToRingBuffer,DataIsWrittenOnEmptyBuffer)
+{
+	CopyFromBufferToRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
+	TEST_ASSERT(0);
+}
+
