@@ -9,10 +9,17 @@
 
 #include "Neo6mLiteFlex.h"
 
+#define min(a,b)             \
+({                           \
+    __typeof__ (a) _a = (a); \
+    __typeof__ (b) _b = (b); \
+    _a < _b ? _a : _b;       \
+})
+
 typedef struct Neo6mLiteFlexStruct
 {
 	lwrb_t MessageRingBuffer;
-	uint8_t MessageByteArray[NEEO6M_BATCH_BUFFER_SIZE];
+	uint8_t MessageByteArray[NEO6M_BATCH_BUFFER_SIZE];
 	IOFunc_t pIORead;
 } Neo6mLiteFlexStruct_t;
 
@@ -36,7 +43,7 @@ Neo6mLiteFlex_t Neo6mLiteFlex_Create()
 	Neo6mLiteFlex_t Neo6mLiteFlex;
 	Neo6mLiteFlex = (Neo6mLiteFlex_t) malloc(sizeof(Neo6mLiteFlexStruct_t));
 
-	lwrb_init(&(Neo6mLiteFlex->MessageRingBuffer),Neo6mLiteFlex->MessageByteArray,NEEO6M_BATCH_BUFFER_SIZE);
+	lwrb_init(&(Neo6mLiteFlex->MessageRingBuffer),Neo6mLiteFlex->MessageByteArray,NEO6M_BATCH_BUFFER_SIZE);
 	Neo6mLiteFlex->pIORead = NULL;
 
 	return Neo6mLiteFlex;
@@ -49,11 +56,51 @@ void Neo6mLiteFlex_Destroy(Neo6mLiteFlex_t Neo6mLiteFlex)
 }
 
 
-UT_STATIC Neo6mLiteFlexStatus_t IOReadIntoToRingBuffer(Neo6mLiteFlex_t Neo6mLiteFlex, size_t CopySize)
+UT_STATIC Neo6mLiteFlexStatus_t IOReadIntoRingBuffer(Neo6mLiteFlex_t Neo6mLiteFlex, size_t CopySize)
 {
+	Neo6mLiteFlexStatus_t Status = NEO6M_SUCCESS;
+
+	lwrb_t* pRingBuf;
+	uint8_t* ByteArray;
+	size_t ReadBytes = 0;
+	size_t FirstReadSize;
+	size_t SecondReadSize;
+	size_t FreeBytes;
+
+	pRingBuf = &(Neo6mLiteFlex->MessageRingBuffer);
+	ByteArray = Neo6mLiteFlex->MessageByteArray;
+	FreeBytes = lwrb_get_free(pRingBuf);
+
 	if (Neo6mLiteFlex->pIORead)
 	{
-		Neo6mLiteFlex->pIORead(Neo6mLiteFlex->MessageByteArray,CopySize);
-		lwrb_advance(&(Neo6mLiteFlex->MessageRingBuffer), CopySize);
+		if(CopySize < FreeBytes)
+		{
+			FirstReadSize = min(lwrb_get_linear_block_write_length(pRingBuf),CopySize);
+			SecondReadSize = CopySize-FirstReadSize;
+
+			ReadBytes += Neo6mLiteFlex->pIORead(ByteArray+pRingBuf->w,FirstReadSize);
+			lwrb_advance(pRingBuf, FirstReadSize);
+			if (SecondReadSize)
+			{
+				ReadBytes += Neo6mLiteFlex->pIORead(ByteArray+pRingBuf->w,SecondReadSize);
+				lwrb_advance(pRingBuf, SecondReadSize);
+			}
+
+			if (ReadBytes != CopySize)
+			{
+				Status = NEO6M_IO_ERROR;
+			}
+		}
+		else
+		{
+			Status = NEO6M_BUFFER_OVERFLOW;
+		}
+
 	}
+	else
+	{
+		Status = NEO6M_NULL_PTR;
+	}
+
+	return Status;
 }

@@ -12,7 +12,7 @@
 
 
 
-UT_STATIC Neo6mLiteFlexStatus_t IOReadIntoToRingBuffer(Neo6mLiteFlex_t Neo6mLiteFlex, size_t CopySize);
+UT_STATIC Neo6mLiteFlexStatus_t IOReadIntoRingBuffer(Neo6mLiteFlex_t Neo6mLiteFlex, size_t CopySize);
 
 
 

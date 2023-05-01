@@ -8,6 +8,12 @@
 #include "Neo6mPrivates.h"
 
 static Neo6mLiteFlex_t Neo6m;
+static lwrb_t* pRingBuf;
+static uint8_t* ByteArray;
+static Neo6mLiteFlexStatus_t Status;
+static uint8_t ExpectedBuf[NEO6M_BATCH_BUFFER_SIZE];
+static uint8_t ActualBuf[NEO6M_BATCH_BUFFER_SIZE];
+
 
 /*XX Replaces 0x0D and 0x0A (Line Feed+Carriage Return) which will be ignored by the parser*/
 static char Neo6mTrackingDataSet[] =
@@ -115,45 +121,114 @@ TEST(Neo6m_MetaTests,IncompleteByteReadCopiesAndReturnsSetDataLength)
 }
 
 /*-----------------------------------------------------------------------------------------*/
-TEST_GROUP(Neo6m_IOReadIntoToRingBuffer);
+TEST_GROUP(Neo6m_IOReadIntoRingBuffer);
 
-TEST_SETUP(Neo6m_IOReadIntoToRingBuffer)
+TEST_SETUP(Neo6m_IOReadIntoRingBuffer)
 {
 	MockNeo6m_Create(20);
 	Neo6m = Neo6mLiteFlex_Create();
 	Neo6mLiteFlex_SetIORead(Neo6m, MockNeo6m_Read);
+
+	pRingBuf = Neo6mLiteFlex_GetRingBuffPtr(Neo6m);
+	ByteArray = Neo6mLiteFlex_GetByteArray(Neo6m);
 }
 
-TEST_TEAR_DOWN(Neo6m_IOReadIntoToRingBuffer)
+TEST_TEAR_DOWN(Neo6m_IOReadIntoRingBuffer)
 {
 	MockNeo6m_VerifyComplete();
 	MockNeo6m_Destroy();
 }
 
-TEST(Neo6m_IOReadIntoToRingBuffer,DataIsWrittenOnEmptyBuffer)
+/*Tests that reading into an empty ring buffer calls read IO as expected, and leaves the buffer in the
+ * expected state containing the expected data */
+TEST(Neo6m_IOReadIntoRingBuffer,DataIsWrittenOnEmptyBuffer)
 {
+
 	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mTrackingDataSet, NEO6M_BATCH_SIZE);
 
-	IOReadIntoToRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
+	Status = IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
 
-	lwrb_t* pRingBuf = Neo6mLiteFlex_GetRingBuffPtr(Neo6m);
-	uint8_t* ByteArray = Neo6mLiteFlex_GetByteArray(Neo6m);
+	memcpy(ExpectedBuf,Neo6mTrackingDataSet,NEO6M_BATCH_SIZE);
+	lwrb_read(pRingBuf, ActualBuf, NEO6M_BATCH_SIZE);
 
-	TEST_ASSERT_EQUAL(pRingBuf->w,NEO6M_BATCH_SIZE);
-	TEST_ASSERT_EQUAL(NEO6M_BATCH_SIZE,lwrb_get_full(pRingBuf));
-	TEST_ASSERT_EQUAL_CHAR_ARRAY(Neo6mTrackingDataSet,ByteArray,NEO6M_BATCH_SIZE);
+	TEST_ASSERT_EQUAL(NEO6M_SUCCESS,Status);
+	TEST_ASSERT_EQUAL_CHAR_ARRAY(ExpectedBuf,ActualBuf,NEO6M_BATCH_SIZE);
+}
+/*Tests that reading into an ring buffer pre-filled with 10 bytes calls read IO as expected, and leaves the buffer in the
+ * expected state (write pointer in accumulated size position and containing the expected data (the first 10 bytes
+ * of the data set and then its full size) */
+TEST(Neo6m_IOReadIntoRingBuffer,DataIsAppendedOnPartiallyFullBuffer)
+{
+	size_t DummyFirstCallSize = 10;
+	MockNeo6m_ExpectReadAndReturn(DummyFirstCallSize, Neo6mTrackingDataSet, DummyFirstCallSize);
+	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mTrackingDataSet, NEO6M_BATCH_SIZE);
+
+	IOReadIntoRingBuffer(Neo6m,DummyFirstCallSize);
+	Status = IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
+
+	memcpy(ExpectedBuf,Neo6mTrackingDataSet,10);
+	memcpy(ExpectedBuf+10,Neo6mTrackingDataSet,NEO6M_BATCH_SIZE);
+	lwrb_read(pRingBuf, ActualBuf, NEO6M_BATCH_SIZE+DummyFirstCallSize);
+
+	TEST_ASSERT_EQUAL(NEO6M_SUCCESS,Status);
+	TEST_ASSERT_EQUAL_CHAR_ARRAY(ExpectedBuf,ActualBuf,NEO6M_BATCH_SIZE+DummyFirstCallSize);
 }
 
-TEST(Neo6m_IOReadIntoToRingBuffer,DataIsAppendedOnPartiallyFullBuffer)
+/*Tests that if the reading into the circular buffer needs to circle back to the beginning of the byte buffer, two separates reads are made
+ * and that the read data is as expected.
+ */
+TEST(Neo6m_IOReadIntoRingBuffer,DataIsAppendedCircularly)
+{
+	lwrb_advance(pRingBuf,NEO6M_BATCH_SIZE);
+	lwrb_skip(pRingBuf,NEO6M_BATCH_SIZE);
+
+	MockNeo6m_ExpectReadAndReturn(NEO6M_BUFFER_SAFETY_MARGIN, Neo6mTrackingDataSet, NEO6M_BUFFER_SAFETY_MARGIN);
+	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE-NEO6M_BUFFER_SAFETY_MARGIN, Neo6mTrackingDataSet+NEO6M_BUFFER_SAFETY_MARGIN, NEO6M_BATCH_SIZE-NEO6M_BUFFER_SAFETY_MARGIN);
+
+	Status = IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
+
+	memcpy(ExpectedBuf,Neo6mTrackingDataSet,NEO6M_BATCH_SIZE);
+	lwrb_read(pRingBuf, ActualBuf, NEO6M_BATCH_SIZE);
+
+	TEST_ASSERT_EQUAL(NEO6M_SUCCESS,Status);
+	TEST_ASSERT_EQUAL_CHAR_ARRAY(ExpectedBuf,ActualBuf,NEO6M_BATCH_SIZE);
+
+}
+
+TEST(Neo6m_IOReadIntoRingBuffer,NullPointerIsReported)
+{
+	Neo6mLiteFlex_SetIORead(Neo6m, NULL);
+
+	Status = IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
+
+	TEST_ASSERT_EQUAL(NEO6M_NULL_PTR,Status);
+}
+
+TEST(Neo6m_IOReadIntoRingBuffer,OverflowIsReported)
+{
+	lwrb_advance(pRingBuf, NEO6M_BATCH_SIZE);
+
+	Status = IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
+
+	TEST_ASSERT_EQUAL(NEO6M_BUFFER_OVERFLOW,Status);
+}
+
+TEST(Neo6m_IOReadIntoRingBuffer,IOErrorIsReported)
 {
 
+	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mTrackingDataSet, 10);
+
+	Status = IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
+
+	TEST_ASSERT_EQUAL(NEO6M_IO_ERROR,Status);
 }
+
+
+
 /*
- * ->Data is written on an empty buffer
- *
- * ->Data is appended on a partially full buffer
  *
  * ->Null Pointer is reported
- *->IO Error is reported
- *->Overflow is detected and reported*/
+
+ *	->Overflow is detected and reported
+ *	->IO Error is reported*/
 
