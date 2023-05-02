@@ -120,7 +120,7 @@ TEST(Neo6m_MetaTests,IncompleteByteReadCopiesAndReturnsSetDataLength)
 	/*Also tested that it fails if no read is called */
 }
 
-/*-----------------------------------------------------------------------------------------*/
+/*-----------------------------------------------------------------------------------------------------------------*/
 TEST_GROUP(Neo6m_IOReadIntoRingBuffer);
 
 TEST_SETUP(Neo6m_IOReadIntoRingBuffer)
@@ -223,12 +223,70 @@ TEST(Neo6m_IOReadIntoRingBuffer,IOErrorIsReported)
 	TEST_ASSERT_EQUAL(NEO6M_IO_ERROR,Status);
 }
 
+/*-----------------------------------------------------------------------------------------------------------------*/
 
+TEST_GROUP(Neo6m_GetBytesUntilSequence);
 
-/*
- *
- * ->Null Pointer is reported
+TEST_SETUP(Neo6m_GetBytesUntilSequence)
+{
+	MockNeo6m_Create(20);
+	Neo6m = Neo6mLiteFlex_Create();
+	Neo6mLiteFlex_SetIORead(Neo6m, MockNeo6m_Read);
 
- *	->Overflow is detected and reported
- *	->IO Error is reported*/
+	pRingBuf = Neo6mLiteFlex_GetRingBuffPtr(Neo6m);
+	ByteArray = Neo6mLiteFlex_GetByteArray(Neo6m);
+
+	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mTrackingDataSet, NEO6M_BATCH_SIZE);
+	IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
+}
+
+TEST_TEAR_DOWN(Neo6m_GetBytesUntilSequence)
+{
+	MockNeo6m_VerifyComplete();
+	MockNeo6m_Destroy();
+}
+
+TEST(Neo6m_GetBytesUntilSequence,Finds1Byte)
+{
+	TEST_ASSERT_EQUAL_UINT32(6,GetBytesUntilSequence(pRingBuf,","));
+}
+
+TEST(Neo6m_GetBytesUntilSequence,FindsString)
+{
+	TEST_ASSERT_EQUAL_UINT32(36,GetBytesUntilSequence(pRingBuf,"GPGGA"));
+}
+
+TEST(Neo6m_GetBytesUntilSequence,FindsStringAtStart)
+{
+	TEST_ASSERT_EQUAL_UINT32(0,GetBytesUntilSequence(pRingBuf,"$GPVTG"));
+}
+
+TEST(Neo6m_GetBytesUntilSequence,FindsStringAtEnd)
+{
+	lwrb_skip(pRingBuf,740);
+	TEST_ASSERT_EQUAL_UINT32(5,GetBytesUntilSequence(pRingBuf,",0091"));
+}
+
+TEST(Neo6m_GetBytesUntilSequence,UnexistentStringReturnsFFFFFFFF)
+{
+	TEST_ASSERT_EQUAL_UINT32(SEQUENCE_NOT_FOUND,GetBytesUntilSequence(pRingBuf,"Hello"));
+}
+
+TEST(Neo6m_GetBytesUntilSequence,NullStringReturnsFFFFFFFF)
+{
+	TEST_ASSERT_EQUAL_UINT32(SEQUENCE_NOT_FOUND,GetBytesUntilSequence(pRingBuf,""));
+}
+
+TEST(Neo6m_GetBytesUntilSequence,TooLargeStringReturnsFFFFFFFF)
+{
+	TEST_ASSERT_EQUAL_UINT32(SEQUENCE_NOT_FOUND,GetBytesUntilSequence(pRingBuf,"$GPVTG,,T,,M,0.196"));
+}
+
+TEST(Neo6m_GetBytesUntilSequence,ReadPointerDoesntMove)
+{
+	size_t OldReadPointer = pRingBuf->r;
+	GetBytesUntilSequence(pRingBuf,"GPGGA");
+	size_t NewReadPointer = pRingBuf->r;
+	TEST_ASSERT_EQUAL(OldReadPointer,NewReadPointer);
+}
 

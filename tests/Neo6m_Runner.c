@@ -18,3 +18,14 @@ TEST_GROUP_RUNNER(Neo6m_CopyFromBufferToRingBuffer)
   RUN_TEST_CASE(Neo6m_IOReadIntoRingBuffer, IOErrorIsReported);
 }
 
+TEST_GROUP_RUNNER(Neo6m_GetBytesUntilSequence)
+{
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, Finds1Byte);
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, FindsString);
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, FindsStringAtStart);
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, FindsStringAtEnd);
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, UnexistentStringReturnsFFFFFFFF);
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, NullStringReturnsFFFFFFFF);
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, TooLargeStringReturnsFFFFFFFF);
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, ReadPointerDoesntMove);
+}

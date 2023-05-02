@@ -30,6 +30,8 @@ typedef size_t (*IOFunc_t)(void*,size_t);
 #define NEO6M_BUFFER_SAFETY_MARGIN (100)
 #define NEO6M_BATCH_BUFFER_SIZE NEO6M_BATCH_SIZE+NEO6M_BUFFER_SAFETY_MARGIN
 
+#define SEQUENCE_NOT_FOUND 0xFFFFFFFF
+
 typedef struct Neo6mLiteFlexStruct* Neo6mLiteFlex_t;
 
 Neo6mLiteFlex_t Neo6mLiteFlex_Create();

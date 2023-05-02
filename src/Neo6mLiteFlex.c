@@ -6,8 +6,11 @@
  */
 #include <stdint.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "Neo6mLiteFlex.h"
+
+#define MAX_SEQUENCE_SIZE 10
 
 #define min(a,b)             \
 ({                           \
@@ -75,6 +78,7 @@ UT_STATIC Neo6mLiteFlexStatus_t IOReadIntoRingBuffer(Neo6mLiteFlex_t Neo6mLiteFl
 	{
 		if(CopySize < FreeBytes)
 		{
+			/*Since buffer is circular and we are doing linear reads, we may need to do two separate reads*/
 			FirstReadSize = min(lwrb_get_linear_block_write_length(pRingBuf),CopySize);
 			SecondReadSize = CopySize-FirstReadSize;
 
@@ -103,4 +107,37 @@ UT_STATIC Neo6mLiteFlexStatus_t IOReadIntoRingBuffer(Neo6mLiteFlex_t Neo6mLiteFl
 	}
 
 	return Status;
+}
+
+UT_STATIC uint32_t GetBytesUntilSequence(lwrb_t* pRingBuf, char* Sequence)
+{
+	uint32_t BytesUntilSeq = SEQUENCE_NOT_FOUND;
+	uint32_t PositionChecked = 0;
+	char SequenceBuffer[MAX_SEQUENCE_SIZE];
+	uint32_t SequenceLength = 0;
+	uint32_t FullBytes = 0;
+
+	if (Sequence)
+	{
+		SequenceLength = strlen(Sequence);
+	}
+	if (SequenceLength && (SequenceLength<MAX_SEQUENCE_SIZE) && pRingBuf )
+	{
+		FullBytes = lwrb_get_full(pRingBuf);
+		/*Peek bytes equal to the size of the fed sequence until a match is found*/
+		while (PositionChecked<FullBytes)
+		{
+			lwrb_peek(pRingBuf,PositionChecked,SequenceBuffer,SequenceLength);
+			SequenceBuffer[SequenceLength]='\0'; /*Make char buffer a string */
+			if (!strcmp(SequenceBuffer,Sequence))
+			{
+				BytesUntilSeq = PositionChecked;
+				break;
+			}
+			PositionChecked++;
+		}
+
+	}
+
+	return BytesUntilSeq;
 }
