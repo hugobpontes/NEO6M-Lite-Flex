@@ -111,19 +111,14 @@ UT_STATIC Neo6mLiteFlexStatus_t IOReadIntoRingBuffer(Neo6mLiteFlex_t Neo6mLiteFl
 
 
 /*Reminder:also reads/skips sequence*/
-UT_STATIC uint32_t GetBytesUntilSequence(lwrb_t* pRingBuf, char* Sequence)
+static uint32_t GetBytesUntilSequence(lwrb_t* pRingBuf, char* Sequence, uint32_t SequenceLength)
 {
 	uint32_t BytesUntilSeq = SEQUENCE_NOT_FOUND;
 	uint32_t PositionChecked = 0;
 	char SequenceBuffer[MAX_SEQUENCE_SIZE];
-	uint32_t SequenceLength = 0;
 	uint32_t FullBytes = 0;
 
-	if (Sequence)
-	{
-		SequenceLength = strlen(Sequence);
-	}
-	if (SequenceLength && (SequenceLength<MAX_SEQUENCE_SIZE) && pRingBuf )
+	if (Sequence && SequenceLength && (SequenceLength<MAX_SEQUENCE_SIZE) && pRingBuf )
 	{
 		FullBytes = lwrb_get_full(pRingBuf);
 		/*Peek bytes equal to the size of the fed sequence until a match is found*/
@@ -133,7 +128,7 @@ UT_STATIC uint32_t GetBytesUntilSequence(lwrb_t* pRingBuf, char* Sequence)
 			SequenceBuffer[SequenceLength]='\0'; /*Make char buffer a string */
 			if (!strncmp(SequenceBuffer,Sequence,SequenceLength))
 			{
-				BytesUntilSeq = PositionChecked+SequenceLength;
+				BytesUntilSeq = PositionChecked;
 				break;
 			}
 			PositionChecked++;
@@ -144,40 +139,39 @@ UT_STATIC uint32_t GetBytesUntilSequence(lwrb_t* pRingBuf, char* Sequence)
 	return BytesUntilSeq;
 }
 
+UT_STATIC uint32_t GetBytesUntilSequenceEnd(lwrb_t* pRingBuf, char* Sequence)
+{
+	uint32_t SequenceLength = strlen(Sequence);
+
+	uint32_t BytesUntilSeqEnd = GetBytesUntilSequence(pRingBuf,Sequence,SequenceLength);
+
+	if (BytesUntilSeqEnd != SEQUENCE_NOT_FOUND)
+	{
+		BytesUntilSeqEnd += SequenceLength;
+	}
+
+	return BytesUntilSeqEnd;
+}
+
+
 /*Reminder:also reads/skips sequence*/
 UT_STATIC char GetCharBeforeSequence(lwrb_t* pRingBuf,char* Sequence)
 {
-	char SequenceBuffer[MAX_SEQUENCE_SIZE];
-	uint32_t SequenceLength = 0;
-	uint32_t PositionChecked = 0;
-	uint32_t FullBytes = 0;
-	char RetChar = CHAR_NOT_FOUND;
-	if (Sequence)
+	char CharBeforeSeq = 'X';
+	uint32_t SequenceLength = strlen(Sequence);
+
+	uint32_t BytesUntilSeq = GetBytesUntilSequence(pRingBuf,Sequence,SequenceLength);
+
+	if (BytesUntilSeq != SEQUENCE_NOT_FOUND)
 	{
-		SequenceLength = strlen(Sequence);
-	}
-	if (SequenceLength && (SequenceLength<MAX_SEQUENCE_SIZE) && pRingBuf)
-	{
-		FullBytes = lwrb_get_full(pRingBuf);
-		/*Peek bytes equal to the size of the fed sequence until a match is found*/
-		while (PositionChecked<FullBytes)
+		if (BytesUntilSeq != 0)
 		{
-			lwrb_peek(pRingBuf,PositionChecked,SequenceBuffer,SequenceLength);
-			SequenceBuffer[SequenceLength]='\0'; /*Make char buffer a string */
-			if (!strncmp(SequenceBuffer,Sequence,SequenceLength))
-			{
-				if (PositionChecked > 0)
-				{
-					lwrb_skip(pRingBuf,PositionChecked-1);
-					lwrb_read(pRingBuf,&RetChar,1);
-				}
-				lwrb_skip(pRingBuf,1);
-				break;
-			}
-			PositionChecked++;
+			lwrb_skip(pRingBuf,BytesUntilSeq-1);
+			lwrb_read(pRingBuf,&CharBeforeSeq,1);
 		}
-
+			lwrb_skip(pRingBuf,SequenceLength);
 	}
 
-return RetChar;
+
+	return CharBeforeSeq;
 }

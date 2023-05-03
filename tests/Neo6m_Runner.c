@@ -18,21 +18,21 @@ TEST_GROUP_RUNNER(Neo6m_CopyFromBufferToRingBuffer)
   RUN_TEST_CASE(Neo6m_IOReadIntoRingBuffer, IOErrorIsReported);
 }
 
-TEST_GROUP_RUNNER(Neo6m_GetBytesUntilSequence)
+TEST_GROUP_RUNNER(Neo6m_GetBytesUntilSequenceEnd)
 {
-  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, Finds1Byte);
-  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, FindsString);
-  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, FindsStringAtStart);
-  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, FindsStringAtEnd);
-  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, UnexistentStringReturnsFFFFFFFF);
-  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, NullStringReturnsFFFFFFFF);
-  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, TooLargeStringReturnsFFFFFFFF);
-  RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, ReadPointerDoesntMove);
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequenceEnd, Finds1Byte);
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequenceEnd, FindsString);
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequenceEnd, FindsStringAtStart);
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequenceEnd, FindsStringAtEnd);
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequenceEnd, UnexistentStringReturnsFFFFFFFF);
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequenceEnd, NullStringReturnsFFFFFFFF);
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequenceEnd, TooLargeStringReturnsFFFFFFFF);
+  RUN_TEST_CASE(Neo6m_GetBytesUntilSequenceEnd, ReadPointerDoesntMove);
 }
 
 TEST_GROUP_RUNNER(Neo6m_GetCharBeforeSequence)
 {
-  RUN_TEST_CASE(Neo6m_GetCharBeforeSequence, ReturnsCharBeforeSequenceAndReadPtrAdvances);
+  RUN_TEST_CASE(Neo6m_GetCharBeforeSequence, ReturnsCharBeforeSequence);
   RUN_TEST_CASE(Neo6m_GetCharBeforeSequence, ReturnsXIfNotFound);
   RUN_TEST_CASE(Neo6m_GetCharBeforeSequence, ReturnsXIfTooLargeString);
   RUN_TEST_CASE(Neo6m_GetCharBeforeSequence, ReturnsXIfNullString);

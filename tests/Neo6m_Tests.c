@@ -227,9 +227,9 @@ TEST(Neo6m_IOReadIntoRingBuffer,IOErrorIsReported)
 
 /*-----------------------------------------------------------------------------------------------------------------*/
 
-TEST_GROUP(Neo6m_GetBytesUntilSequence);
+TEST_GROUP(Neo6m_GetBytesUntilSequenceEnd);
 
-TEST_SETUP(Neo6m_GetBytesUntilSequence)
+TEST_SETUP(Neo6m_GetBytesUntilSequenceEnd)
 {
 	MockNeo6m_Create(20);
 	Neo6m = Neo6mLiteFlex_Create();
@@ -244,53 +244,53 @@ TEST_SETUP(Neo6m_GetBytesUntilSequence)
 	OldReadPointer = pRingBuf->r;
 }
 
-TEST_TEAR_DOWN(Neo6m_GetBytesUntilSequence)
+TEST_TEAR_DOWN(Neo6m_GetBytesUntilSequenceEnd)
 {
 	MockNeo6m_VerifyComplete();
 	MockNeo6m_Destroy();
 }
 
-TEST(Neo6m_GetBytesUntilSequence,Finds1Byte)
+TEST(Neo6m_GetBytesUntilSequenceEnd,Finds1Byte)
 {
-	TEST_ASSERT_EQUAL_UINT32(7,GetBytesUntilSequence(pRingBuf,","));
+	TEST_ASSERT_EQUAL_UINT32(7,GetBytesUntilSequenceEnd(pRingBuf,","));
 }
 
-TEST(Neo6m_GetBytesUntilSequence,FindsString)
+TEST(Neo6m_GetBytesUntilSequenceEnd,FindsString)
 {
 	lwrb_skip(pRingBuf,10);
-	TEST_ASSERT_EQUAL_UINT32(31,GetBytesUntilSequence(pRingBuf,"GPGGA,"));
+	TEST_ASSERT_EQUAL_UINT32(31,GetBytesUntilSequenceEnd(pRingBuf,"GPGGA,"));
 }
 
-TEST(Neo6m_GetBytesUntilSequence,FindsStringAtStart)
+TEST(Neo6m_GetBytesUntilSequenceEnd,FindsStringAtStart)
 {
-	TEST_ASSERT_EQUAL_UINT32(7,GetBytesUntilSequence(pRingBuf,"$GPVTG,"));
+	TEST_ASSERT_EQUAL_UINT32(7,GetBytesUntilSequenceEnd(pRingBuf,"$GPVTG,"));
 }
 
-TEST(Neo6m_GetBytesUntilSequence,FindsStringAtEnd)
+TEST(Neo6m_GetBytesUntilSequenceEnd,FindsStringAtEnd)
 {
 	lwrb_skip(pRingBuf,740);
 	char mychar;
-	TEST_ASSERT_EQUAL_UINT32(9,GetBytesUntilSequence(pRingBuf,",0091"));
+	TEST_ASSERT_EQUAL_UINT32(9,GetBytesUntilSequenceEnd(pRingBuf,",0091"));
 }
 
-TEST(Neo6m_GetBytesUntilSequence,UnexistentStringReturnsFFFFFFFF)
+TEST(Neo6m_GetBytesUntilSequenceEnd,UnexistentStringReturnsFFFFFFFF)
 {
-	TEST_ASSERT_EQUAL_UINT32(SEQUENCE_NOT_FOUND,GetBytesUntilSequence(pRingBuf,"Hello"));
+	TEST_ASSERT_EQUAL_UINT32(SEQUENCE_NOT_FOUND,GetBytesUntilSequenceEnd(pRingBuf,"Hello"));
 }
 
-TEST(Neo6m_GetBytesUntilSequence,NullStringReturnsFFFFFFFF)
+TEST(Neo6m_GetBytesUntilSequenceEnd,NullStringReturnsFFFFFFFF)
 {
-	TEST_ASSERT_EQUAL_UINT32(SEQUENCE_NOT_FOUND,GetBytesUntilSequence(pRingBuf,""));
+	TEST_ASSERT_EQUAL_UINT32(SEQUENCE_NOT_FOUND,GetBytesUntilSequenceEnd(pRingBuf,""));
 }
 
-TEST(Neo6m_GetBytesUntilSequence,TooLargeStringReturnsFFFFFFFF)
+TEST(Neo6m_GetBytesUntilSequenceEnd,TooLargeStringReturnsFFFFFFFF)
 {
-	TEST_ASSERT_EQUAL_UINT32(SEQUENCE_NOT_FOUND,GetBytesUntilSequence(pRingBuf,"$GPVTG,,T,,M,0.196"));
+	TEST_ASSERT_EQUAL_UINT32(SEQUENCE_NOT_FOUND,GetBytesUntilSequenceEnd(pRingBuf,"$GPVTG,,T,,M,0.196"));
 }
 
-TEST(Neo6m_GetBytesUntilSequence,ReadPointerDoesntMove)
+TEST(Neo6m_GetBytesUntilSequenceEnd,ReadPointerDoesntMove)
 {
-	GetBytesUntilSequence(pRingBuf,"GPGGA");
+	GetBytesUntilSequenceEnd(pRingBuf,"GPGGA");
 	NewReadPointer = pRingBuf->r;
 	TEST_ASSERT_EQUAL(OldReadPointer,NewReadPointer);
 }
@@ -322,11 +322,11 @@ TEST_TEAR_DOWN(Neo6m_GetCharBeforeSequence)
 	MockNeo6m_Destroy();
 }
 /*-----------------------------------------------------------------------------------------------------------------*/
-TEST(Neo6m_GetCharBeforeSequence,ReturnsCharBeforeSequenceAndReadPtrAdvances)
+TEST(Neo6m_GetCharBeforeSequence,ReturnsCharBeforeSequence)
 {
-	TEST_ASSERT_EQUAL_CHAR('T',GetCharBeforeSequence(pRingBuf,","));
+	TEST_ASSERT_EQUAL_CHAR('4',GetCharBeforeSequence(pRingBuf,",K"));
 	NewReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL(2,NewReadPointer-OldReadPointer);
+	TEST_ASSERT_EQUAL(20,NewReadPointer-OldReadPointer);
 }
 
 TEST(Neo6m_GetCharBeforeSequence,ReturnsXIfNotFound)
