@@ -13,54 +13,56 @@ static uint8_t* ByteArray;
 static Neo6mLiteFlexStatus_t Status;
 static uint8_t ExpectedBuf[NEO6M_BATCH_BUFFER_SIZE];
 static uint8_t ActualBuf[NEO6M_BATCH_BUFFER_SIZE];
+static size_t OldReadPointer;
+static size_t NewReadPointer;
 
 
-/*XX Replaces 0x0D and 0x0A (Line Feed+Carriage Return) which will be ignored by the parser*/
+/*ZZ Replaces 0x0D and 0x0A (Line Feed+Carriage Return) which will be ignored by the parser*/
 static char Neo6mTrackingDataSet[] =
-		"$GPVTG,,T,,M,0.196,N,0.364,K,A*2CXX"
-		"$GPGGA,140721.00,2769.50673,N,00321.52120,W,1,05,5.79,130.4,M,48.3,M,,*4AXX"
-		"$GPGSA,A,3,18,23,10,02,27,,,,,,,,7.48,5.79,4.73*0CXX"
-		"$GPGSV,2,1,06,02,30,050,44,08,,,28,10,48,093,40,18,06,050,43*44XX"
-		"$GPGSV,2,2,06,23,30,053,47,27,69,030,38*7AXX"
-		"$GPGLL,2769.50673,N,00321.52120,W,140721.00,A,A*78XX"
-		"$GPRMC,140722.00,A,2769.50696,N,00321.52135,W,0.219,,290423,,,A*69XX"
-		"$GPVTG,,T,,M,0.219,N,0.405,K,A*28XX"
-		"$GPGGA,140722.00,2769.50696,N,00321.52135,W,1,05,5.79,130.5,M,48.3,M,,*47XX"
-		"$GPGSA,A,3,18,23,10,02,27,,,,,,,,7.48,5.79,4.73*0CXX"
-		"$GPGSV,2,1,06,02,30,050,44,08,,,28,10,48,093,40,18,06,050,43*44XX"
-		"$GPGSV,2,2,06,23,30,053,47,27,69,030,38*7AXX"
-		"$GPGLL,2769.50696,N,00321.52135,W,140722.00,A,A*74XX"
+		"$GPVTG,T,,M,0.196,N,0.364,K,A*2CZZ"
+		"$GPGGA,140721.00,2769.50673,N,00321.52120,W,1,05,5.79,130.4,M,48.3,M,,*4AZZ"
+		"$GPGSA,A,3,18,23,10,02,27,,,,,,,,7.48,5.79,4.73*0CZZ"
+		"$GPGSV,2,1,06,02,30,050,44,08,,,28,10,48,093,40,18,06,050,43*44ZZ"
+		"$GPGSV,2,2,06,23,30,053,47,27,69,030,38*7AZZ"
+		"$GPGLL,2769.50673,N,00321.52120,W,140721.00,A,A*78ZZ"
+		"$GPRMC,140722.00,A,2769.50696,N,00321.52135,W,0.219,,290423,,,A*69ZZ"
+		"$GPVTG,,T,,M,0.219,N,0.405,K,A*28ZZ"
+		"$GPGGA,140722.00,2769.50696,N,00321.52135,W,1,05,5.79,130.5,M,48.3,M,,*47ZZ"
+		"$GPGSA,A,3,18,23,10,02,27,,,,,,,,7.48,5.79,4.73*0CZZ"
+		"$GPGSV,2,1,06,02,30,050,44,08,,,28,10,48,093,40,18,06,050,43*44ZZ"
+		"$GPGSV,2,2,06,23,30,053,47,27,69,030,38*7AZZ"
+		"$GPGLL,2769.50696,N,00321.52135,W,140722.00,A,A*74ZZ"
 		"$GPRMC,140722.00,A,2769.50696,N,0091";
 
 static char Neo6mNonTrackingDataSet[] =
-		"VTG,,,,,,,,,N*30XX"
+		"VTG,,,,,,,,,N*30ZZ"
 		"$GPGGA,,,,,,0,00,99.99,,,,,"
-		",*48XX"
-		"$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30XX"
-		"$GPGSV,1,1,00*79XX"
-		"$GPGLL,,,,,,V,N*64XX"
-		"$GPRMC,,V,,,,,,,,,,N*53XX"
-		"$GPVTG,,,,,,,,,N*30XX"
-		"$GPGGA,,,,,,0,00,99.99,,,,,,*48XX"
-		"$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30XX"
-		"$GPGSV,1,1,00*79XX"
-		"$GPGLL,,,,,,V,N*64XX"
-		"$GPRMC,,V,,,,,,,,,,N*53XX"
-		"$GPVTG,,,,,,,,,N*30XX"
-		"$GPGGA,,,,,,0,00,99.99,,,,,,*48XX"
-		"$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30XX"
-		"$GPGSV,1,1,00*79XX"
-		"$GPGLL,,,,,,V,N*64XX"
-		"$GPRMC,,V,,,,,,,,,,N*53XX"
-		"$GPVTG,,,,,,,,,N*30XX"
-		"$GPGGA,,,,,,0,00,99.99,,,,,,*48XX"
-		"$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30XX"
-		"$GPGSV,1,1,00*79XX"
-		"$GPGLL,,,,,,V,N*64XX"
-		"$GPRMC,,V,,,,,,,,,,N*53XX"
-		"$GPVTG,,,,,,,,,N*30XX"
-		"$GPGGA,,,,,,0,00,99.99,,,,,,*48XX"
-		"$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30XX"
+		",*48ZZ"
+		"$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30ZZ"
+		"$GPGSV,1,1,00*79ZZ"
+		"$GPGLL,,,,,,V,N*64ZZ"
+		"$GPRMC,,V,,,,,,,,,,N*53ZZ"
+		"$GPVTG,,,,,,,,,N*30ZZ"
+		"$GPGGA,,,,,,0,00,99.99,,,,,,*48ZZ"
+		"$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30ZZ"
+		"$GPGSV,1,1,00*79ZZ"
+		"$GPGLL,,,,,,V,N*64ZZ"
+		"$GPRMC,,V,,,,,,,,,,N*53ZZ"
+		"$GPVTG,,,,,,,,,N*30ZZ"
+		"$GPGGA,,,,,,0,00,99.99,,,,,,*48ZZ"
+		"$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30ZZ"
+		"$GPGSV,1,1,00*79ZZ"
+		"$GPGLL,,,,,,V,N*64ZZ"
+		"$GPRMC,,V,,,,,,,,,,N*53ZZ"
+		"$GPVTG,,,,,,,,,N*30ZZ"
+		"$GPGGA,,,,,,0,00,99.99,,,,,,*48ZZ"
+		"$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30ZZ"
+		"$GPGSV,1,1,00*79ZZ"
+		"$GPGLL,,,,,,V,N*64ZZ"
+		"$GPRMC,,V,,,,,,,,,,N*53ZZ"
+		"$GPVTG,,,,,,,,,N*30ZZ"
+		"$GPGGA,,,,,,0,00,99.99,,,,,,*48ZZ"
+		"$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30ZZ"
 		"$GPGSV";
 
 
@@ -238,6 +240,8 @@ TEST_SETUP(Neo6m_GetBytesUntilSequence)
 
 	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mTrackingDataSet, NEO6M_BATCH_SIZE);
 	IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
+
+	OldReadPointer = pRingBuf->r;
 }
 
 TEST_TEAR_DOWN(Neo6m_GetBytesUntilSequence)
@@ -248,23 +252,25 @@ TEST_TEAR_DOWN(Neo6m_GetBytesUntilSequence)
 
 TEST(Neo6m_GetBytesUntilSequence,Finds1Byte)
 {
-	TEST_ASSERT_EQUAL_UINT32(6,GetBytesUntilSequence(pRingBuf,","));
+	TEST_ASSERT_EQUAL_UINT32(7,GetBytesUntilSequence(pRingBuf,","));
 }
 
 TEST(Neo6m_GetBytesUntilSequence,FindsString)
 {
-	TEST_ASSERT_EQUAL_UINT32(36,GetBytesUntilSequence(pRingBuf,"GPGGA"));
+	lwrb_skip(pRingBuf,10);
+	TEST_ASSERT_EQUAL_UINT32(31,GetBytesUntilSequence(pRingBuf,"GPGGA,"));
 }
 
 TEST(Neo6m_GetBytesUntilSequence,FindsStringAtStart)
 {
-	TEST_ASSERT_EQUAL_UINT32(0,GetBytesUntilSequence(pRingBuf,"$GPVTG"));
+	TEST_ASSERT_EQUAL_UINT32(7,GetBytesUntilSequence(pRingBuf,"$GPVTG,"));
 }
 
 TEST(Neo6m_GetBytesUntilSequence,FindsStringAtEnd)
 {
 	lwrb_skip(pRingBuf,740);
-	TEST_ASSERT_EQUAL_UINT32(5,GetBytesUntilSequence(pRingBuf,",0091"));
+	char mychar;
+	TEST_ASSERT_EQUAL_UINT32(9,GetBytesUntilSequence(pRingBuf,",0091"));
 }
 
 TEST(Neo6m_GetBytesUntilSequence,UnexistentStringReturnsFFFFFFFF)
@@ -284,9 +290,82 @@ TEST(Neo6m_GetBytesUntilSequence,TooLargeStringReturnsFFFFFFFF)
 
 TEST(Neo6m_GetBytesUntilSequence,ReadPointerDoesntMove)
 {
-	size_t OldReadPointer = pRingBuf->r;
 	GetBytesUntilSequence(pRingBuf,"GPGGA");
-	size_t NewReadPointer = pRingBuf->r;
+	NewReadPointer = pRingBuf->r;
 	TEST_ASSERT_EQUAL(OldReadPointer,NewReadPointer);
 }
+
+/*-----------------------------------------------------------------------------------------------------------------*/
+
+TEST_GROUP(Neo6m_GetCharBeforeSequence);
+
+TEST_SETUP(Neo6m_GetCharBeforeSequence)
+{
+	MockNeo6m_Create(20);
+	Neo6m = Neo6mLiteFlex_Create();
+	Neo6mLiteFlex_SetIORead(Neo6m, MockNeo6m_Read);
+
+	pRingBuf = Neo6mLiteFlex_GetRingBuffPtr(Neo6m);
+	ByteArray = Neo6mLiteFlex_GetByteArray(Neo6m);
+
+	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mTrackingDataSet, NEO6M_BATCH_SIZE);
+	IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
+
+	lwrb_skip(pRingBuf,7); /*Skip until first piece of data ('T')*/
+
+	OldReadPointer = pRingBuf->r;
+}
+
+TEST_TEAR_DOWN(Neo6m_GetCharBeforeSequence)
+{
+	MockNeo6m_VerifyComplete();
+	MockNeo6m_Destroy();
+}
+/*-----------------------------------------------------------------------------------------------------------------*/
+TEST(Neo6m_GetCharBeforeSequence,ReturnsCharBeforeSequenceAndReadPtrAdvances)
+{
+	TEST_ASSERT_EQUAL_CHAR('T',GetCharBeforeSequence(pRingBuf,","));
+	NewReadPointer = pRingBuf->r;
+	TEST_ASSERT_EQUAL(2,NewReadPointer-OldReadPointer);
+}
+
+TEST(Neo6m_GetCharBeforeSequence,ReturnsXIfNotFound)
+{
+	TEST_ASSERT_EQUAL_CHAR('X',GetCharBeforeSequence(pRingBuf,"?"));
+	NewReadPointer = pRingBuf->r;
+	TEST_ASSERT_EQUAL(0,NewReadPointer-OldReadPointer);
+}
+
+TEST(Neo6m_GetCharBeforeSequence,ReturnsXIfTooLargeString)
+{
+	TEST_ASSERT_EQUAL_CHAR('X',GetCharBeforeSequence(pRingBuf,"$GPVTG,,T,,M,0.196"));
+	NewReadPointer = pRingBuf->r;
+	TEST_ASSERT_EQUAL(0,NewReadPointer-OldReadPointer);
+}
+
+TEST(Neo6m_GetCharBeforeSequence,ReturnsXIfNullString)
+{
+	TEST_ASSERT_EQUAL_CHAR('X',GetCharBeforeSequence(pRingBuf,""));
+	NewReadPointer = pRingBuf->r;
+	TEST_ASSERT_EQUAL(0,NewReadPointer-OldReadPointer);
+}
+
+TEST(Neo6m_GetCharBeforeSequence,ReturnsXIfEmptyBuffer)
+{
+	lwrb_skip(pRingBuf,750);
+	OldReadPointer = pRingBuf->r;
+	TEST_ASSERT_EQUAL_CHAR('X',GetCharBeforeSequence(pRingBuf,","));
+	NewReadPointer = pRingBuf->r;
+	TEST_ASSERT_EQUAL(0,NewReadPointer-OldReadPointer);
+}
+
+TEST(Neo6m_GetCharBeforeSequence,ReturnsXIfSequenceIsNext)
+{
+	lwrb_skip(pRingBuf,2);
+	OldReadPointer = pRingBuf->r;
+	TEST_ASSERT_EQUAL_CHAR('X',GetCharBeforeSequence(pRingBuf,","));
+	NewReadPointer = pRingBuf->r;
+	TEST_ASSERT_EQUAL(1,NewReadPointer-OldReadPointer);
+}
+
 

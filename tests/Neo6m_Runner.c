@@ -29,3 +29,13 @@ TEST_GROUP_RUNNER(Neo6m_GetBytesUntilSequence)
   RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, TooLargeStringReturnsFFFFFFFF);
   RUN_TEST_CASE(Neo6m_GetBytesUntilSequence, ReadPointerDoesntMove);
 }
+
+TEST_GROUP_RUNNER(Neo6m_GetCharBeforeSequence)
+{
+  RUN_TEST_CASE(Neo6m_GetCharBeforeSequence, ReturnsCharBeforeSequenceAndReadPtrAdvances);
+  RUN_TEST_CASE(Neo6m_GetCharBeforeSequence, ReturnsXIfNotFound);
+  RUN_TEST_CASE(Neo6m_GetCharBeforeSequence, ReturnsXIfTooLargeString);
+  RUN_TEST_CASE(Neo6m_GetCharBeforeSequence, ReturnsXIfNullString);
+  RUN_TEST_CASE(Neo6m_GetCharBeforeSequence, ReturnsXIfEmptyBuffer);
+  RUN_TEST_CASE(Neo6m_GetCharBeforeSequence, ReturnsXIfSequenceIsNext);
+}
