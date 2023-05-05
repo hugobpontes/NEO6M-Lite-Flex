@@ -13,6 +13,7 @@ static void RunAllTests(void)
   RUN_TEST_GROUP(Neo6m_CopyFromBufferToRingBuffer);
   RUN_TEST_GROUP(Neo6m_GetBytesUntilSequenceEnd);
   RUN_TEST_GROUP(Neo6m_GetCharBeforeSequence);
+  RUN_TEST_GROUP(Neo6m_GetFloatUntilSequence);
 }
 
 int main(int argc, const char * argv[])

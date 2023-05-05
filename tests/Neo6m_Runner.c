@@ -39,3 +39,14 @@ TEST_GROUP_RUNNER(Neo6m_GetCharBeforeSequence)
   RUN_TEST_CASE(Neo6m_GetCharBeforeSequence, ReturnsXIfEmptyBuffer);
   RUN_TEST_CASE(Neo6m_GetCharBeforeSequence, ReturnsXIfSequenceIsNext);
 }
+
+TEST_GROUP_RUNNER(Neo6m_GetFloatUntilSequence)
+{
+  RUN_TEST_CASE(Neo6m_GetFloatUntilSequence, ReturnsFloatUntilSequence);
+  RUN_TEST_CASE(Neo6m_GetFloatUntilSequence, ReturnsErrorIfSequenceIsNext);
+  RUN_TEST_CASE(Neo6m_GetFloatUntilSequence, ReturnsErrorIfSequenceNotFound);
+  RUN_TEST_CASE(Neo6m_GetFloatUntilSequence, ReturnsErrorIfSequenceNull);
+  RUN_TEST_CASE(Neo6m_GetFloatUntilSequence, ReturnsErrorIfSequenceTooLong);
+  RUN_TEST_CASE(Neo6m_GetFloatUntilSequence, ReturnsErrorIfBytesUntilStringTooLong);
+  RUN_TEST_CASE(Neo6m_GetFloatUntilSequence, ReturnsErrorIfFloatStringContainsNonNumeric);
+}

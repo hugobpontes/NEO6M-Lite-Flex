@@ -32,7 +32,7 @@ typedef size_t (*IOFunc_t)(void*,size_t);
 
 #define SEQUENCE_NOT_FOUND 0xFFFFFFFF
 #define CHAR_NOT_FOUND 'X'
-#define FLOAT_NOT_FOUND 'X'
+#define FLOAT_NOT_FOUND -12345678
 
 typedef struct Neo6mLiteFlexStruct* Neo6mLiteFlex_t;
 

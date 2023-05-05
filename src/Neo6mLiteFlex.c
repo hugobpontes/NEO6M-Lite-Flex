@@ -11,6 +11,7 @@
 #include "Neo6mLiteFlex.h"
 
 #define MAX_SEQUENCE_SIZE 10
+#define MAX_FLOAT_STRING_SIZE 15
 
 #define min(a,b)             \
 ({                           \
@@ -147,7 +148,7 @@ UT_STATIC uint32_t GetBytesUntilSequenceEnd(lwrb_t* pRingBuf, char* Sequence)
 
 	if (BytesUntilSeqEnd != SEQUENCE_NOT_FOUND)
 	{
-		BytesUntilSeqEnd += SequenceLength;
+		BytesUntilSeqEnd += SequenceLength; /*Simply add sequence length to get bytes until end*/
 	}
 
 	return BytesUntilSeqEnd;
@@ -157,7 +158,7 @@ UT_STATIC uint32_t GetBytesUntilSequenceEnd(lwrb_t* pRingBuf, char* Sequence)
 /*Reminder:also reads/skips sequence*/
 UT_STATIC char GetCharBeforeSequence(lwrb_t* pRingBuf,char* Sequence)
 {
-	char CharBeforeSeq = 'X';
+	char CharBeforeSeq = CHAR_NOT_FOUND;
 	uint32_t SequenceLength = strlen(Sequence);
 
 	uint32_t BytesUntilSeq = GetBytesUntilSequence(pRingBuf,Sequence,SequenceLength);
@@ -169,9 +170,43 @@ UT_STATIC char GetCharBeforeSequence(lwrb_t* pRingBuf,char* Sequence)
 			lwrb_skip(pRingBuf,BytesUntilSeq-1);
 			lwrb_read(pRingBuf,&CharBeforeSeq,1);
 		}
-			lwrb_skip(pRingBuf,SequenceLength);
+		lwrb_skip(pRingBuf,SequenceLength);
 	}
 
 
 	return CharBeforeSeq;
 }
+
+UT_STATIC float GetFloatUntilSequence(lwrb_t* pRingBuf,char* Sequence)
+{
+	float FloatUntilSequence = FLOAT_NOT_FOUND;
+
+	uint32_t SequenceLength = strlen(Sequence);
+	char* pLastValidChar;
+
+	uint32_t BytesUntilSeq = GetBytesUntilSequence(pRingBuf,Sequence,SequenceLength);
+
+	char FloatString[MAX_FLOAT_STRING_SIZE];
+
+	if (BytesUntilSeq != SEQUENCE_NOT_FOUND)
+	{
+		if (BytesUntilSeq && BytesUntilSeq<MAX_FLOAT_STRING_SIZE)
+		{
+			lwrb_read(pRingBuf, FloatString, BytesUntilSeq);
+			FloatString[BytesUntilSeq] = '\0';
+			FloatUntilSequence = strtof((char*)FloatString, &pLastValidChar);
+			if ((pLastValidChar-FloatString) != BytesUntilSeq)
+			{
+				FloatUntilSequence = FLOAT_NOT_FOUND;
+			}
+		}
+		else
+		{
+			lwrb_skip(pRingBuf,BytesUntilSeq);
+		}
+		lwrb_skip(pRingBuf,SequenceLength);
+	}
+
+	return FloatUntilSequence;
+}
+/*in float: function to check if float byte array is valid - apply it to all bytes until sequence is found (to do this set maximum)*/
