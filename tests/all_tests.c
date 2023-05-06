@@ -14,6 +14,7 @@ static void RunAllTests(void)
   RUN_TEST_GROUP(Neo6m_GetBytesUntilSequenceEnd);
   RUN_TEST_GROUP(Neo6m_GetCharBeforeSequence);
   RUN_TEST_GROUP(Neo6m_GetFloatUntilSequence);
+  RUN_TEST_GROUP(Neo6m_GetIntUntilSequence);
 }
 
 int main(int argc, const char * argv[])

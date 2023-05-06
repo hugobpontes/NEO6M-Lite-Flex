@@ -50,3 +50,13 @@ TEST_GROUP_RUNNER(Neo6m_GetFloatUntilSequence)
   RUN_TEST_CASE(Neo6m_GetFloatUntilSequence, ReturnsErrorIfBytesUntilStringTooLong);
   RUN_TEST_CASE(Neo6m_GetFloatUntilSequence, ReturnsErrorIfFloatStringContainsNonNumeric);
 }
+TEST_GROUP_RUNNER(Neo6m_GetIntUntilSequence)
+{
+  RUN_TEST_CASE(Neo6m_GetIntUntilSequence, ReturnsIntUntilSequence);
+  RUN_TEST_CASE(Neo6m_GetIntUntilSequence, ReturnsErrorIfSequenceIsNext);
+  RUN_TEST_CASE(Neo6m_GetIntUntilSequence, ReturnsErrorIfSequenceNotFound);
+  RUN_TEST_CASE(Neo6m_GetIntUntilSequence, ReturnsErrorIfSequenceNull);
+  RUN_TEST_CASE(Neo6m_GetIntUntilSequence, ReturnsErrorIfSequenceTooLong);
+  RUN_TEST_CASE(Neo6m_GetIntUntilSequence, ReturnsErrorIfBytesUntilStringTooLong);
+  RUN_TEST_CASE(Neo6m_GetIntUntilSequence, ReturnsErrorIfIntStringContainsNonNumeric);
+}

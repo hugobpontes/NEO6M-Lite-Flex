@@ -19,6 +19,7 @@
  * can have, including the decimal point
  */
 #define MAX_FLOAT_STRING_SIZE 15
+#define MAX_INT_STRING_SIZE 15
 /**
  * @brief Macro that returns the minimum of two values
  */
@@ -328,8 +329,6 @@ UT_STATIC float GetFloatUntilSequence(lwrb_t* pRingBuf,char* Sequence)
 
 	uint32_t BytesUntilSeq = GetBytesUntilSequence(pRingBuf,Sequence,SequenceLength);
 
-	char FloatString[MAX_FLOAT_STRING_SIZE];
-
 	if (BytesUntilSeq != SEQUENCE_NOT_FOUND)
 	{
 		if (BytesUntilSeq && BytesUntilSeq<MAX_FLOAT_STRING_SIZE)
@@ -344,4 +343,46 @@ UT_STATIC float GetFloatUntilSequence(lwrb_t* pRingBuf,char* Sequence)
 	}
 
 	return FloatUntilSequence;
+}
+
+static uint16_t ConvertCharsToInt(lwrb_t* pRingBuf, uint32_t CharsNbr)
+{
+	uint16_t ConvertedInt = UINT16_NOT_FOUND;
+	char IntString[MAX_FLOAT_STRING_SIZE];
+	char* pLastValidChar;
+
+	lwrb_read(pRingBuf, IntString, CharsNbr);
+	IntString[CharsNbr] = '\0'; // Make Float char array a String
+	ConvertedInt = strtoul(IntString, &pLastValidChar,10);
+	if ((pLastValidChar-IntString) != CharsNbr)
+	{
+		ConvertedInt = UINT16_NOT_FOUND; //Signal invalid float
+	}
+
+	return ConvertedInt;
+}
+
+UT_STATIC uint16_t GetIntUntilSequence(lwrb_t* pRingBuf,char* Sequence)
+{
+	uint16_t IntUntilSequence = UINT16_NOT_FOUND;
+
+	uint32_t SequenceLength = strlen(Sequence);
+	char* pLastValidChar;
+
+	uint32_t BytesUntilSeq = GetBytesUntilSequence(pRingBuf,Sequence,SequenceLength);
+
+	if (BytesUntilSeq != SEQUENCE_NOT_FOUND)
+	{
+		if (BytesUntilSeq && BytesUntilSeq<MAX_INT_STRING_SIZE)
+		{
+			IntUntilSequence = ConvertCharsToInt(pRingBuf,BytesUntilSeq);
+		}
+		else
+		{
+			lwrb_skip(pRingBuf,BytesUntilSeq); /*Skip chars found until sequence if invalid float string size*/
+		}
+		lwrb_skip(pRingBuf,SequenceLength); /*Skip sequence in both cases */
+	}
+
+	return IntUntilSequence;
 }
