@@ -6,6 +6,7 @@
 #include "Neo6mLiteFlex.h"
 
 #include "Neo6mPrivates.h"
+#include "TestDataSets.h"
 
 static Neo6mLiteFlex_t Neo6m;
 static lwrb_t* pRingBuf;
@@ -15,59 +16,6 @@ static uint8_t ExpectedBuf[NEO6M_BATCH_BUFFER_SIZE];
 static uint8_t ActualBuf[NEO6M_BATCH_BUFFER_SIZE];
 static size_t OldReadPointer;
 static size_t NewReadPointer;
-
-
-/*ZZ Replaces 0x0D and 0x0A (Line Feed+Carriage Return) which will be ignored by the parser*/
-static char Neo6mTrackingDataSet[] =
-		"$GPVTG,T,,M,0.196,N,0.364,K,A*2CZZ"
-		"$GPGGA,140721.00,2769.50673,N,00321.52120,W,1,05,5.79,130.4,M,48.3,M,,*4AZZ"
-		"$GPGSA,A,3,18,23,10,02,27,,,,,,,,7.48,5.79,4.73*0CZZ"
-		"$GPGSV,2,1,06,02,30,050,44,08,,,28,10,48,093,40,18,06,050,43*44ZZ"
-		"$GPGSV,2,2,06,23,30,053,47,27,69,030,38*7AZZ"
-		"$GPGLL,2769.50673,N,00321.52120,W,140721.00,A,A*78ZZ"
-		"$GPRMC,140722.00,A,2769.50696,N,00321.52135,W,0.219,,290423,,,A*69ZZ"
-		"$GPVTG,,T,,M,0.219,N,0.405,K,A*28ZZ"
-		"$GPGGA,140722.00,2769.50696,N,00321.52135,W,1,05,5.79,130.5,M,48.3,M,,*47ZZ"
-		"$GPGSA,A,3,18,23,10,02,27,,,,,,,,7.48,5.79,4.73*0CZZ"
-		"$GPGSV,2,1,06,02,30,050,44,08,,,28,10,48,093,40,18,06,050,43*44ZZ"
-		"$GPGSV,2,2,06,23,30,053,47,27,69,030,38*7AZZ"
-		"$GPGLL,2769.50696,N,00321.52135,W,140722.00,A,A*74ZZ"
-		"$GPRMC,140722.00,A,2769.50696,N,0091";
-
-static char Neo6mNonTrackingDataSet[] =
-		"VTG,,,,,,,,,N*30ZZ"
-		"$GPGGA,,,,,,0,00,99.99,,,,,"
-		",*48ZZ"
-		"$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30ZZ"
-		"$GPGSV,1,1,00*79ZZ"
-		"$GPGLL,,,,,,V,N*64ZZ"
-		"$GPRMC,,V,,,,,,,,,,N*53ZZ"
-		"$GPVTG,,,,,,,,,N*30ZZ"
-		"$GPGGA,,,,,,0,00,99.99,,,,,,*48ZZ"
-		"$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30ZZ"
-		"$GPGSV,1,1,00*79ZZ"
-		"$GPGLL,,,,,,V,N*64ZZ"
-		"$GPRMC,,V,,,,,,,,,,N*53ZZ"
-		"$GPVTG,,,,,,,,,N*30ZZ"
-		"$GPGGA,,,,,,0,00,99.99,,,,,,*48ZZ"
-		"$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30ZZ"
-		"$GPGSV,1,1,00*79ZZ"
-		"$GPGLL,,,,,,V,N*64ZZ"
-		"$GPRMC,,V,,,,,,,,,,N*53ZZ"
-		"$GPVTG,,,,,,,,,N*30ZZ"
-		"$GPGGA,,,,,,0,00,99.99,,,,,,*48ZZ"
-		"$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30ZZ"
-		"$GPGSV,1,1,00*79ZZ"
-		"$GPGLL,,,,,,V,N*64ZZ"
-		"$GPRMC,,V,,,,,,,,,,N*53ZZ"
-		"$GPVTG,,,,,,,,,N*30ZZ"
-		"$GPGGA,,,,,,0,00,99.99,,,,,,*48ZZ"
-		"$GPGSA,A,1,,,,,,,,,,,,,99.99,99.99,99.99*30ZZ"
-		"$GPGSV";
-static char TooLargeFloatDataSet[] =
-		"$GPVTG,T,,M,0.196293892328372733,12345678937228,";
-static char BadFloatDataSet[] =
-		"$GPVTG,T,,M,0.1962.38929,51LA,";
 
 static void TestReadPointerAdvanced(uint32_t Advance)
 {
@@ -435,7 +383,7 @@ TEST(Neo6m_GetFloatUntilSequence,ReturnsErrorIfBytesUntilStringTooLong)
 {
 	/*Empty buffer and fill in specific data, for this test only */
 	lwrb_skip(pRingBuf,750);
-	lwrb_write(pRingBuf,TooLargeFloatDataSet,sizeof(TooLargeFloatDataSet));
+	lwrb_write(pRingBuf,TooLargeDataSet,sizeof(TooLargeDataSet));
 
 	SkipAndUpdateTestReadPtr(12);
 	TEST_ASSERT_EQUAL_FLOAT(FLOAT_NOT_FOUND,GetFloatUntilSequence(pRingBuf,","));
@@ -446,7 +394,7 @@ TEST(Neo6m_GetFloatUntilSequence,ReturnsErrorIfFloatStringContainsNonNumeric)
 {
 	/*Empty buffer and fill in specific data, for this test only */
 	lwrb_skip(pRingBuf,750);
-	lwrb_write(pRingBuf,BadFloatDataSet,sizeof(BadFloatDataSet));
+	lwrb_write(pRingBuf,NonNumericDataSet,sizeof(NonNumericDataSet));
 
 	SkipAndUpdateTestReadPtr(12);
 	TEST_ASSERT_EQUAL_FLOAT(FLOAT_NOT_FOUND,GetFloatUntilSequence(pRingBuf,","));
@@ -514,7 +462,7 @@ TEST(Neo6m_GetIntUntilSequence,ReturnsErrorIfBytesUntilStringTooLong)
 {
 	/*Empty buffer and fill in specific data, for this test only */
 	lwrb_skip(pRingBuf,750);
-	lwrb_write(pRingBuf,TooLargeFloatDataSet,sizeof(TooLargeFloatDataSet));
+	lwrb_write(pRingBuf,TooLargeDataSet,sizeof(TooLargeDataSet));
 
 	SkipAndUpdateTestReadPtr(33);
 	TEST_ASSERT_EQUAL_FLOAT(UINT16_NOT_FOUND,GetIntUntilSequence(pRingBuf,","));
@@ -525,7 +473,7 @@ TEST(Neo6m_GetIntUntilSequence,ReturnsErrorIfIntStringContainsNonNumeric)
 {
 	/*Empty buffer and fill in specific data, for this test only */
 	lwrb_skip(pRingBuf,750);
-	lwrb_write(pRingBuf,BadFloatDataSet,sizeof(BadFloatDataSet));
+	lwrb_write(pRingBuf,NonNumericDataSet,sizeof(NonNumericDataSet));
 
 	SkipAndUpdateTestReadPtr(25);
 	TEST_ASSERT_EQUAL_FLOAT(UINT16_NOT_FOUND,GetIntUntilSequence(pRingBuf,","));
@@ -567,7 +515,7 @@ TEST(Neo6m_GetNextBytesAsInt,ReturnsNextBytesAsInt)
 TEST(Neo6m_GetNextBytesAsInt,ReturnsErrorIfNonNumeric)
 {
 	lwrb_skip(pRingBuf,750);
-	lwrb_write(pRingBuf,BadFloatDataSet,sizeof(BadFloatDataSet));
+	lwrb_write(pRingBuf,NonNumericDataSet,sizeof(NonNumericDataSet));
 
 	SkipAndUpdateTestReadPtr(25);
 	TEST_ASSERT_EQUAL_UINT16(UINT16_NOT_FOUND,GetNextBytesAsInt(pRingBuf,4));
@@ -579,4 +527,33 @@ TEST(Neo6m_GetNextBytesAsInt,ReturnsErrorIfBufferEmpty)
 	SkipAndUpdateTestReadPtr(750-5);
 	TEST_ASSERT_EQUAL_UINT16(UINT16_NOT_FOUND,GetNextBytesAsInt(pRingBuf,6));
 	TestReadPointerAdvanced(0);
+}
+
+/*----------------------------------------*/
+TEST_GROUP(Neo6m_FillInNeo6mMsgStruct);
+
+TEST_SETUP(Neo6m_FillInNeo6mMsgStruct)
+{
+	MockNeo6m_Create(20);
+	Neo6m = Neo6mLiteFlex_Create();
+	Neo6mLiteFlex_SetIORead(Neo6m, MockNeo6m_Read);
+
+	pRingBuf = Neo6mLiteFlex_GetRingBuffPtr(Neo6m);
+	ByteArray = Neo6mLiteFlex_GetByteArray(Neo6m);
+
+	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mTrackingDataSet, NEO6M_BATCH_SIZE);
+	IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
+
+	OldReadPointer = pRingBuf->r;
+}
+
+TEST_TEAR_DOWN(Neo6m_FillInNeo6mMsgStruct)
+{
+	MockNeo6m_VerifyComplete();
+	MockNeo6m_Destroy();
+}
+
+TEST(Neo6m_FillInNeo6mMsgStruct,FillsAsExpectedFromTrackingData)
+{
+	TEST_ASSERT(0);
 }

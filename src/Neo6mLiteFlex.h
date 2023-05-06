@@ -60,7 +60,7 @@ typedef size_t (*IOFunc_t)(void*,size_t);
 /*Value to be returned by some functions when a valid char could not be found*/
 #define CHAR_NOT_FOUND 'X'
 /*Value to be returned by some functions when a valid float could not be found*/
-#define FLOAT_NOT_FOUND -12345678
+#define FLOAT_NOT_FOUND -9999999
 /*Value to be returned by some functions when a valid float could not be found*/
 #define UINT16_NOT_FOUND 0xFFFF
 /**

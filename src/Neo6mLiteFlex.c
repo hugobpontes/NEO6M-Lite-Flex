@@ -398,7 +398,7 @@ UT_STATIC uint16_t GetNextBytesAsInt(lwrb_t* pRingBuf,uint32_t BytesToRead)
 	{
 		FullBytes = lwrb_get_full(pRingBuf);
 		if (FullBytes >= BytesToRead)
-		s{
+		{
 			NextBytesAsInt = ConvertCharsToInt(pRingBuf,BytesToRead);
 		}
 	}
