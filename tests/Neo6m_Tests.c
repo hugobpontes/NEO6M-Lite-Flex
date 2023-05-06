@@ -69,6 +69,18 @@ static char TooLargeFloatDataSet[] =
 static char BadFloatDataSet[] =
 		"$GPVTG,T,,M,0.1962.38929,";
 
+static void TestReadPointerAdvanced(uint32_t Advance)
+{
+	NewReadPointer = pRingBuf->r;
+	TEST_ASSERT_EQUAL(Advance,NewReadPointer-OldReadPointer);
+}
+
+static void SkipAndUpdateTestReadPtr(uint32_t skip)
+{
+	lwrb_skip(pRingBuf,skip);
+	OldReadPointer = pRingBuf->r;
+}
+
 
 TEST_GROUP(Neo6m_MetaTests);
 
@@ -81,7 +93,6 @@ TEST_TEAR_DOWN(Neo6m_MetaTests)
 {
 	MockNeo6m_VerifyComplete();
 	MockNeo6m_Destroy();
-
 }
 
 TEST(Neo6m_MetaTests,GetMsReturnsDataAsSet)
@@ -185,6 +196,7 @@ TEST(Neo6m_IOReadIntoRingBuffer,DataIsAppendedOnPartiallyFullBuffer)
  */
 TEST(Neo6m_IOReadIntoRingBuffer,DataIsAppendedCircularly)
 {
+	/*Make buffer start at the middle of the allocated memory*/
 	lwrb_advance(pRingBuf,NEO6M_BATCH_SIZE);
 	lwrb_skip(pRingBuf,NEO6M_BATCH_SIZE);
 
@@ -295,8 +307,7 @@ TEST(Neo6m_GetBytesUntilSequenceEnd,TooLargeStringReturnsFFFFFFFF)
 TEST(Neo6m_GetBytesUntilSequenceEnd,ReadPointerDoesntMove)
 {
 	GetBytesUntilSequenceEnd(pRingBuf,"GPGGA");
-	NewReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL(OldReadPointer,NewReadPointer);
+	TestReadPointerAdvanced(0);
 }
 
 /*-----------------------------------------------------------------------------------------------------------------*/
@@ -329,47 +340,39 @@ TEST_TEAR_DOWN(Neo6m_GetCharBeforeSequence)
 TEST(Neo6m_GetCharBeforeSequence,ReturnsCharBeforeSequence)
 {
 	TEST_ASSERT_EQUAL_CHAR('4',GetCharBeforeSequence(pRingBuf,",K"));
-	NewReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL(20,NewReadPointer-OldReadPointer);
+	TestReadPointerAdvanced(20);
 }
 
 TEST(Neo6m_GetCharBeforeSequence,ReturnsXIfNotFound)
 {
 	TEST_ASSERT_EQUAL_CHAR('X',GetCharBeforeSequence(pRingBuf,"?"));
-	NewReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL(0,NewReadPointer-OldReadPointer);
+	TestReadPointerAdvanced(0);
 }
 
 TEST(Neo6m_GetCharBeforeSequence,ReturnsXIfTooLargeString)
 {
 	TEST_ASSERT_EQUAL_CHAR('X',GetCharBeforeSequence(pRingBuf,"$GPVTG,,T,,M,0.196"));
-	NewReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL(0,NewReadPointer-OldReadPointer);
+	TestReadPointerAdvanced(0);
 }
 
 TEST(Neo6m_GetCharBeforeSequence,ReturnsXIfNullString)
 {
 	TEST_ASSERT_EQUAL_CHAR('X',GetCharBeforeSequence(pRingBuf,""));
-	NewReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL(0,NewReadPointer-OldReadPointer);
+	TestReadPointerAdvanced(0);
 }
 
 TEST(Neo6m_GetCharBeforeSequence,ReturnsXIfEmptyBuffer)
 {
-	lwrb_skip(pRingBuf,750);
-	OldReadPointer = pRingBuf->r;
+	SkipAndUpdateTestReadPtr(750);
 	TEST_ASSERT_EQUAL_CHAR('X',GetCharBeforeSequence(pRingBuf,","));
-	NewReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL(0,NewReadPointer-OldReadPointer);
+	TestReadPointerAdvanced(0);
 }
 
 TEST(Neo6m_GetCharBeforeSequence,ReturnsXIfSequenceIsNext)
 {
-	lwrb_skip(pRingBuf,2);
-	OldReadPointer = pRingBuf->r;
+	SkipAndUpdateTestReadPtr(2);
 	TEST_ASSERT_EQUAL_CHAR('X',GetCharBeforeSequence(pRingBuf,","));
-	NewReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL(1,NewReadPointer-OldReadPointer);
+	TestReadPointerAdvanced(1);
 }
 
 /*-----------------------------------------------------------------------------------------------------------------*/
@@ -398,62 +401,54 @@ TEST_TEAR_DOWN(Neo6m_GetFloatUntilSequence)
 
 TEST(Neo6m_GetFloatUntilSequence,ReturnsFloatUntilSequence)
 {
-	lwrb_skip(pRingBuf,12);
-	OldReadPointer = pRingBuf->r;
+	SkipAndUpdateTestReadPtr(12);
 	TEST_ASSERT_EQUAL_FLOAT(0.196,GetFloatUntilSequence(pRingBuf,","));
-	NewReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL(6,NewReadPointer-OldReadPointer);
+	TestReadPointerAdvanced(6);
 }
 
 TEST(Neo6m_GetFloatUntilSequence,ReturnsErrorIfSequenceIsNext)
 {
-	lwrb_skip(pRingBuf,11);
-	OldReadPointer = pRingBuf->r;
+	SkipAndUpdateTestReadPtr(11);
 	TEST_ASSERT_EQUAL_FLOAT(FLOAT_NOT_FOUND,GetFloatUntilSequence(pRingBuf,","));
-	NewReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL(1,NewReadPointer-OldReadPointer);
+	TestReadPointerAdvanced(1);
 }
 
 TEST(Neo6m_GetFloatUntilSequence,ReturnsErrorIfSequenceNotFound)
 {
 	TEST_ASSERT_EQUAL_FLOAT(FLOAT_NOT_FOUND,GetFloatUntilSequence(pRingBuf,"Hello"));
-	NewReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL(0,NewReadPointer-OldReadPointer);
+	TestReadPointerAdvanced(0);
 }
 
 TEST(Neo6m_GetFloatUntilSequence,ReturnsErrorIfSequenceNull)
 {
 	TEST_ASSERT_EQUAL_FLOAT(FLOAT_NOT_FOUND,GetFloatUntilSequence(pRingBuf,""));
-	NewReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL(0,NewReadPointer-OldReadPointer);
+	TestReadPointerAdvanced(0);
 }
 
 TEST(Neo6m_GetFloatUntilSequence,ReturnsErrorIfSequenceTooLong)
 {
 	TEST_ASSERT_EQUAL_FLOAT(FLOAT_NOT_FOUND,GetFloatUntilSequence(pRingBuf,",K,A*28ZZ$GPGGA"));
-	NewReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL(0,NewReadPointer-OldReadPointer);
+	TestReadPointerAdvanced(0);
 }
 
 TEST(Neo6m_GetFloatUntilSequence,ReturnsErrorIfBytesUntilStringTooLong)
 {
+	/*Empty buffer and fill in specific data, for this test only */
 	lwrb_skip(pRingBuf,750);
 	lwrb_write(pRingBuf,TooLargeFloatDataSet,sizeof(TooLargeFloatDataSet));
-	lwrb_skip(pRingBuf,12);
-	OldReadPointer = pRingBuf->r;
+
+	SkipAndUpdateTestReadPtr(12);
 	TEST_ASSERT_EQUAL_FLOAT(FLOAT_NOT_FOUND,GetFloatUntilSequence(pRingBuf,","));
-	NewReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL(21,NewReadPointer-OldReadPointer);
+	TestReadPointerAdvanced(21);
 }
 
 TEST(Neo6m_GetFloatUntilSequence,ReturnsErrorIfFloatStringContainsNonNumeric)
 {
+	/*Empty buffer and fill in specific data, for this test only */
 	lwrb_skip(pRingBuf,750);
 	lwrb_write(pRingBuf,BadFloatDataSet,sizeof(BadFloatDataSet));
-	lwrb_skip(pRingBuf,12);
-	OldReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL_FLOAT(FLOAT_NOT_FOUND,GetFloatUntilSequence(pRingBuf,","));
-	NewReadPointer = pRingBuf->r;
-	TEST_ASSERT_EQUAL(13,NewReadPointer-OldReadPointer);
 
+	SkipAndUpdateTestReadPtr(12);
+	TEST_ASSERT_EQUAL_FLOAT(FLOAT_NOT_FOUND,GetFloatUntilSequence(pRingBuf,","));
+	TestReadPointerAdvanced(13);
 }
