@@ -60,3 +60,10 @@ TEST_GROUP_RUNNER(Neo6m_GetIntUntilSequence)
   RUN_TEST_CASE(Neo6m_GetIntUntilSequence, ReturnsErrorIfBytesUntilStringTooLong);
   RUN_TEST_CASE(Neo6m_GetIntUntilSequence, ReturnsErrorIfIntStringContainsNonNumeric);
 }
+TEST_GROUP_RUNNER(Neo6m_GetNextBytesAsInt)
+{
+  RUN_TEST_CASE(Neo6m_GetNextBytesAsInt, ReturnsNextBytesAsInt);
+  RUN_TEST_CASE(Neo6m_GetNextBytesAsInt, ReturnsErrorIfNonNumeric);
+  RUN_TEST_CASE(Neo6m_GetNextBytesAsInt, ReturnsErrorIfBufferEmpty);
+}
+

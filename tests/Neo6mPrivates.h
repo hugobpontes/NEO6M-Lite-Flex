@@ -15,5 +15,6 @@ UT_STATIC uint32_t GetBytesUntilSequenceEnd(lwrb_t* pRingBuf, char* Sequence);
 UT_STATIC char GetCharBeforeSequence(lwrb_t* pRingBuf,char* Sequence);
 UT_STATIC float GetFloatUntilSequence(lwrb_t* pRingBuf,char* Sequence);
 UT_STATIC uint16_t GetIntUntilSequence(lwrb_t* pRingBuf,char* Sequence);
+UT_STATIC uint16_t GetNextBytesAsInt(lwrb_t* pRingBuf,uint32_t BytesToRead);
 
 #endif /* NEO6M_TESTS_H_ */

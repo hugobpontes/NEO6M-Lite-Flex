@@ -348,7 +348,7 @@ UT_STATIC float GetFloatUntilSequence(lwrb_t* pRingBuf,char* Sequence)
 static uint16_t ConvertCharsToInt(lwrb_t* pRingBuf, uint32_t CharsNbr)
 {
 	uint16_t ConvertedInt = UINT16_NOT_FOUND;
-	char IntString[MAX_FLOAT_STRING_SIZE];
+	char IntString[MAX_INT_STRING_SIZE];
 	char* pLastValidChar;
 
 	lwrb_read(pRingBuf, IntString, CharsNbr);
@@ -385,4 +385,23 @@ UT_STATIC uint16_t GetIntUntilSequence(lwrb_t* pRingBuf,char* Sequence)
 	}
 
 	return IntUntilSequence;
+}
+
+UT_STATIC uint16_t GetNextBytesAsInt(lwrb_t* pRingBuf,uint32_t BytesToRead)
+{
+	uint16_t NextBytesAsInt = UINT16_NOT_FOUND;
+	uint32_t FullBytes;
+
+	char IntString[MAX_INT_STRING_SIZE];
+
+	if (pRingBuf && BytesToRead && (BytesToRead < MAX_INT_STRING_SIZE))
+	{
+		FullBytes = lwrb_get_full(pRingBuf);
+		if (FullBytes >= BytesToRead)
+		s{
+			NextBytesAsInt = ConvertCharsToInt(pRingBuf,BytesToRead);
+		}
+	}
+
+	return NextBytesAsInt;
 }

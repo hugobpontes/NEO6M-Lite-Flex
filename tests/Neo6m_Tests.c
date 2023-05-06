@@ -528,6 +528,55 @@ TEST(Neo6m_GetIntUntilSequence,ReturnsErrorIfIntStringContainsNonNumeric)
 	lwrb_write(pRingBuf,BadFloatDataSet,sizeof(BadFloatDataSet));
 
 	SkipAndUpdateTestReadPtr(25);
-	TEST_ASSERT_EQUAL_FLOAT(FLOAT_NOT_FOUND,GetFloatUntilSequence(pRingBuf,","));
+	TEST_ASSERT_EQUAL_FLOAT(UINT16_NOT_FOUND,GetIntUntilSequence(pRingBuf,","));
 	TestReadPointerAdvanced(5);
+}
+
+/*----------------------------------------------------------------------------*/
+
+TEST_GROUP(Neo6m_GetNextBytesAsInt);
+
+TEST_SETUP(Neo6m_GetNextBytesAsInt)
+{
+	MockNeo6m_Create(20);
+	Neo6m = Neo6mLiteFlex_Create();
+	Neo6mLiteFlex_SetIORead(Neo6m, MockNeo6m_Read);
+
+	pRingBuf = Neo6mLiteFlex_GetRingBuffPtr(Neo6m);
+	ByteArray = Neo6mLiteFlex_GetByteArray(Neo6m);
+
+	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mTrackingDataSet, NEO6M_BATCH_SIZE);
+	IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
+
+	OldReadPointer = pRingBuf->r;
+}
+
+TEST_TEAR_DOWN(Neo6m_GetNextBytesAsInt)
+{
+	MockNeo6m_VerifyComplete();
+	MockNeo6m_Destroy();
+}
+
+TEST(Neo6m_GetNextBytesAsInt,ReturnsNextBytesAsInt)
+{
+	SkipAndUpdateTestReadPtr(120);
+	TEST_ASSERT_EQUAL_UINT16(18,GetNextBytesAsInt(pRingBuf,2));
+	TestReadPointerAdvanced(2);
+}
+
+TEST(Neo6m_GetNextBytesAsInt,ReturnsErrorIfNonNumeric)
+{
+	lwrb_skip(pRingBuf,750);
+	lwrb_write(pRingBuf,BadFloatDataSet,sizeof(BadFloatDataSet));
+
+	SkipAndUpdateTestReadPtr(25);
+	TEST_ASSERT_EQUAL_UINT16(UINT16_NOT_FOUND,GetNextBytesAsInt(pRingBuf,4));
+	TestReadPointerAdvanced(4);
+}
+
+TEST(Neo6m_GetNextBytesAsInt,ReturnsErrorIfBufferEmpty)
+{
+	SkipAndUpdateTestReadPtr(750-5);
+	TEST_ASSERT_EQUAL_UINT16(UINT16_NOT_FOUND,GetNextBytesAsInt(pRingBuf,6));
+	TestReadPointerAdvanced(0);
 }
