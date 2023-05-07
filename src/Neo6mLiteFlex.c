@@ -405,3 +405,8 @@ UT_STATIC uint16_t GetNextBytesAsInt(lwrb_t* pRingBuf,uint32_t BytesToRead)
 
 	return NextBytesAsInt;
 }
+
+UT_STATIC Neo6mDefaultMsg_t GetDefaultMsg(lwrb_t* pRingBuf)
+{
+
+}

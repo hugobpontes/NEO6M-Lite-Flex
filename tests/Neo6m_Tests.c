@@ -1,3 +1,5 @@
+#include <stdbool.h>
+
 #include "Neo6m_MockIO.h"
 
 #include "unity.h"
@@ -16,6 +18,268 @@ static uint8_t ExpectedBuf[NEO6M_BATCH_BUFFER_SIZE];
 static uint8_t ActualBuf[NEO6M_BATCH_BUFFER_SIZE];
 static size_t OldReadPointer;
 static size_t NewReadPointer;
+static Neo6mDefaultMsg_t ActualMsg;
+
+static bool CompareTime(Neo6mLiteFlex_Time_t* A, Neo6mLiteFlex_Time_t* B)
+{
+	bool IsEqual = true;
+	if (A->Hours != B->Hours){
+		IsEqual = false;
+	}
+	else if (A->Minutes != B->Minutes){
+		IsEqual = false;
+	}
+	else if (A->Seconds != B->Seconds){
+		IsEqual = false;
+	}
+	return IsEqual;
+}
+static bool CompareDate(Neo6mLiteFlex_Date_t* A, Neo6mLiteFlex_Date_t* B)
+{
+	bool IsEqual = true;
+	if (A->Day != B->Day){
+		IsEqual = false;
+	}
+	else if (A->Month != B->Month){
+		IsEqual = false;
+	}
+	else if (A->Year != B->Year){
+		IsEqual = false;
+	}
+	return IsEqual;
+}
+static bool CompareDegDecMinutes(Neo6mLiteFlex_DegDecMinutes_t* A, Neo6mLiteFlex_DegDecMinutes_t* B)
+{
+	bool IsEqual = true;
+	if (A->DecimalMinutes != B->DecimalMinutes){
+		IsEqual = false;
+	}
+	else if (A->Degrees != B->Degrees){
+		IsEqual = false;
+	}
+	return IsEqual;
+}
+static bool CompareSatInfo(Neo6mLiteFlex_GPGSV_SatInfo_t* A, Neo6mLiteFlex_GPGSV_SatInfo_t* B)
+{
+	bool IsEqual = true;
+	if (A->Azimuth != B->Azimuth){
+		IsEqual = false;
+	}
+	else if (A->Elevation != B->Elevation){
+		IsEqual = false;
+	}
+	else if (A->PRN != B->PRN){
+		IsEqual = false;
+	}
+	else if (A->SNR != B->SNR){
+		IsEqual = false;
+	}
+	return IsEqual;
+}
+static bool CompareGPRMC(Neo6mLiteFlex_GPRMC_t* A, Neo6mLiteFlex_GPRMC_t* B)
+{
+	bool IsEqual = true;
+	if (A->DataStatus != B->DataStatus){
+		IsEqual = false;
+	}
+	else if (A->EW != B->EW){
+		IsEqual = false;
+	}
+	else if (A->EW_MV != B->EW_MV){
+		IsEqual = false;
+	}
+	else if (A->MagneticVariation != B->MagneticVariation){
+		IsEqual = false;
+	}
+	else if (A->NS!= B->NS){
+		IsEqual = false;
+	}
+	else if (A->Speed!= B->Speed){
+		IsEqual = false;
+	}
+	else if (A->Status != B->Status){
+		IsEqual = false;
+	}
+	else if (A->TrackMadeGood != B->TrackMadeGood){
+		IsEqual = false;
+	}
+	else if (!CompareDate(&A->Date,&B->Date)){
+		IsEqual = false;
+	}
+	else if (!CompareDegDecMinutes(&A->Latitude,&B->Latitude)){
+		IsEqual = false;
+	}
+	else if (!CompareDegDecMinutes(&A->Longitude,&B->Longitude)){
+		IsEqual = false;
+	}
+	else if (!CompareTime(&A->UtcTime,&B->UtcTime)){
+		IsEqual = false;
+	}
+	return IsEqual;
+}
+static bool CompareGPVTG(Neo6mLiteFlex_GPVTG_t* A, Neo6mLiteFlex_GPVTG_t* B)
+{
+	bool IsEqual = true;
+	if (A->DataStatus != B->DataStatus){
+		IsEqual = false;
+	}
+	else if (A->MagneticTrackDegrees != B->MagneticTrackDegrees){
+		IsEqual = false;
+	}
+	else if (A->SpeedKnots != B->SpeedKnots){
+		IsEqual = false;
+	}
+	else if (A->SpeedKph != B->SpeedKph){
+		IsEqual = false;
+	}
+	else if (A->TrueTrackDegrees != B->TrueTrackDegrees){
+		IsEqual = false;
+	}
+	return IsEqual;
+}
+static bool CompareGPGGA(Neo6mLiteFlex_GPGGA_t* A, Neo6mLiteFlex_GPGGA_t* B)
+{
+	bool IsEqual = true;
+	if (A->AntennaAltitude!= B->AntennaAltitude){
+		IsEqual = false;
+	}
+	else if (A->EW!= B->EW){
+		IsEqual = false;
+	}
+	else if (A->GeoIdalSeparation!= B->GeoIdalSeparation){
+		IsEqual = false;
+	}
+	else if (A->GpsDataAge!= B->GpsDataAge){
+		IsEqual = false;
+	}
+	else if (A->GpsQuality!= B->GpsQuality){
+		IsEqual = false;
+	}
+	else if (A->HDOP!= B->HDOP){
+		IsEqual = false;
+	}
+	else if (A->NS!= B->NS){
+		IsEqual = false;
+	}
+	else if (A->RefStationId!= B->RefStationId){
+		IsEqual = false;
+	}
+	else if (A->SatsInView!= B->SatsInView){
+		IsEqual = false;
+	}
+	else if (!CompareDegDecMinutes(&A->Latitude,&B->Latitude)){
+		IsEqual = false;
+	}
+	else if (!CompareDegDecMinutes(&A->Longitude,&B->Longitude)){
+		IsEqual = false;
+	}
+	else if (!CompareTime(&A->UtcTime,&B->UtcTime)){
+		IsEqual = false;
+	}
+	return IsEqual;
+}
+static bool CompareGPGSA(Neo6mLiteFlex_GPGSA_t* A, Neo6mLiteFlex_GPGSA_t* B)
+{
+	bool IsEqual = true;
+	if (A->HDOP != B->HDOP){
+		IsEqual = false;
+	}
+	else if (A->Mode123 != B->Mode123){
+		IsEqual = false;
+	}
+	else if (A->ModeMA != B->ModeMA){
+		IsEqual = false;
+	}
+	else if (A->PDOP != B->PDOP){
+		IsEqual = false;
+	}
+	else if (A->VDOP != B->VDOP){
+		IsEqual = false;
+	}
+	else if (memcmp(A->PRN,A->PRN,12*sizeof(uint16_t))){
+		IsEqual = false;
+	}
+	return IsEqual;
+}
+static bool CompareGPGSV(Neo6mLiteFlex_GPGSV_t* A, Neo6mLiteFlex_GPGSV_t* B)
+{
+	bool IsEqual = true;
+	if (A->GPGSVSentences != B->GPGSVSentences){
+		IsEqual = false;
+	}
+	else if (A->SatsInView != B->SatsInView){
+		IsEqual = false;
+	}
+	else if (A->SentenceIndex != B->SentenceIndex){
+		IsEqual = false;
+	}
+	else if (!CompareSatInfo(&A->SatInfo[0],&B->SatInfo[0])){
+		IsEqual = false;
+	}
+	else if (!CompareSatInfo(&A->SatInfo[1],&B->SatInfo[1])){
+		IsEqual = false;
+	}
+	else if (!CompareSatInfo(&A->SatInfo[2],&B->SatInfo[2])){
+		IsEqual = false;
+	}
+	else if (!CompareSatInfo(&A->SatInfo[3],&B->SatInfo[3])){
+		IsEqual = false;
+	}
+	return IsEqual;
+
+}
+static bool CompareGPGLL(Neo6mLiteFlex_GPGLL_t* A, Neo6mLiteFlex_GPGLL_t* B)
+{
+	bool IsEqual = true;
+	if (A->DataStatus != B->DataStatus){
+		IsEqual = false;
+	}
+	else if (A->EW != B->EW){
+		IsEqual = false;
+	}
+	else if (A->FAAModeIndicator != B->FAAModeIndicator){
+		IsEqual = false;
+	}
+	else if (A->NS != B->NS){
+		IsEqual = false;
+	}
+	else if (!CompareDegDecMinutes(&A->Latitude,&B->Latitude)){
+		IsEqual = false;
+	}
+	else if (!CompareDegDecMinutes(&A->Longitude,&B->Longitude)){
+		IsEqual = false;
+	}
+	else if (!CompareTime(&A->UtcTime,&B->UtcTime)){
+		IsEqual = false;
+	}
+	return IsEqual;
+}
+static bool CompareDefaultMsg(Neo6mDefaultMsg_t* A, Neo6mDefaultMsg_t* B)
+{
+	bool IsEqual = true;
+	if (!CompareGPGGA(&A->GPGGA,&B->GPGGA)){
+		IsEqual = false;
+	}
+	else if (!CompareGPGLL(&A->GPGLL,&B->GPGLL)){
+		IsEqual = false;
+	}
+	else if (!CompareGPGSA(&A->GPGSA,&B->GPGSA)){
+		IsEqual = false;
+	}
+	else if (!CompareGPGSV(&A->GPGSV[0],&B->GPGSV[0])){
+		IsEqual = false;
+	}
+	else if (!CompareGPGSV(&A->GPGSV[1],&B->GPGSV[1])){
+		IsEqual = false;
+	}
+	else if (!CompareGPRMC(&A->GPRMC,&B->GPRMC)){
+		IsEqual = false;
+	}
+	else if (!CompareGPVTG(&A->GPVTG,&B->GPVTG)){
+		IsEqual = false;
+	}
+	return IsEqual;
+}
 
 static void TestReadPointerAdvanced(uint32_t Advance)
 {
@@ -530,9 +794,9 @@ TEST(Neo6m_GetNextBytesAsInt,ReturnsErrorIfBufferEmpty)
 }
 
 /*----------------------------------------*/
-TEST_GROUP(Neo6m_FillInNeo6mMsgStruct);
+TEST_GROUP(Neo6m_FillInTrackingNeo6mMsgStruct);
 
-TEST_SETUP(Neo6m_FillInNeo6mMsgStruct)
+TEST_SETUP(Neo6m_FillInTrackingNeo6mMsgStruct)
 {
 	MockNeo6m_Create(20);
 	Neo6m = Neo6mLiteFlex_Create();
@@ -547,13 +811,15 @@ TEST_SETUP(Neo6m_FillInNeo6mMsgStruct)
 	OldReadPointer = pRingBuf->r;
 }
 
-TEST_TEAR_DOWN(Neo6m_FillInNeo6mMsgStruct)
+TEST_TEAR_DOWN(Neo6m_FillInTrackingNeo6mMsgStruct)
 {
 	MockNeo6m_VerifyComplete();
 	MockNeo6m_Destroy();
 }
 
-TEST(Neo6m_FillInNeo6mMsgStruct,FillsAsExpectedFromTrackingData)
+TEST(Neo6m_FillInTrackingNeo6mMsgStruct,FillsAsExpectedFromTrackingData)
 {
-	TEST_ASSERT(0);
+	ActualMsg = GetDefaultMsg(pRingBuf);
+
+	TEST_ASSERT(CompareDefaultMsg(&ActualMsg,&ExpectDefaultMsg_TrackingData));
 }
