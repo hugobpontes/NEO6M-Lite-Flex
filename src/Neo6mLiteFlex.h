@@ -138,7 +138,6 @@ typedef struct GPGSA
 	float PDOP;
 	float HDOP;
 	float VDOP;
-	uint16_t SysId;
 } Neo6mLiteFlex_GPGSA_t;
 
 typedef struct GPGSV_SatInfo
@@ -153,6 +152,7 @@ typedef struct GPGSV
 {
 	uint16_t GPGSVSentences;
 	uint16_t SentenceIndex;
+	uint16_t SatsInView;
 	Neo6mLiteFlex_GPGSV_SatInfo_t SatInfo[4];
 } Neo6mLiteFlex_GPGSV_t;
 
@@ -164,6 +164,7 @@ typedef struct GPGLL
 	char EW;
 	Neo6mLiteFlex_Time_t UtcTime;
 	char DataStatus;
+	char FAAModeIndicator;
 } Neo6mLiteFlex_GPGLL_t;
 
 typedef struct Neo6mDefaultMsg
