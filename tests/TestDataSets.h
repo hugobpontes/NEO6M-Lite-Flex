@@ -24,7 +24,7 @@ static char Neo6mTrackingDataSet[] =
 		"$GPGSV,2,1,06,02,30,050,44,08,,,28,10,48,093,40,18,06,050,43*44ZZ"
 		"$GPGSV,2,2,06,23,30,053,47,27,69,030,38*7AZZ"
 		"$GPGLL,2769.50696,N,00321.52135,W,140722.00,A,A*74ZZ"
-		"$GPRMC,140722.00,A,2769.50696,N,0091";
+		"$GPRMC,140723.00,A,2769.50696,N,0032";
 
 static char Neo6mNonTrackingDataSet[] =
 		"VTG,,,,,,,,,N*30ZZ"
@@ -227,6 +227,60 @@ static Neo6mDefaultMsg_t ExpectDefaultMsg_TrackingData =
 		.FAAModeIndicator = 'A'
 	},
 };
+
+static Neo6mDefaultMsg_t ExpectDefaultMsg_2ndTrackingData =
+{
+	.GPRMC =
+	{
+		.UtcTime =
+		{
+				.Hours = 14,
+				.Minutes = 07,
+				.Seconds = 23,
+		},
+		.Status = 'A',
+		.Latitude =
+		{
+				.Degrees = 27,
+				.DecimalMinutes = 69.50696,
+		},
+		.NS = 'N',
+		.Longitude =
+		{
+				.Degrees = 3,
+				.DecimalMinutes = FLOAT_NOT_FOUND,
+		},
+		.EW = CHAR_NOT_FOUND,
+		.Speed = FLOAT_NOT_FOUND,
+		.TrackMadeGood=FLOAT_NOT_FOUND,
+		.Date =
+		{
+				.Year = UINT16_NOT_FOUND,
+				.Month = UINT16_NOT_FOUND,
+				.Day = UINT16_NOT_FOUND,
+		},
+		.MagneticVariation = FLOAT_NOT_FOUND,
+		.EW_MV = CHAR_NOT_FOUND,
+		.DataStatus = CHAR_NOT_FOUND,
+
+	},
+	.GPVTG = GPVTG_INIT,
+	.GPGGA = GPGGA_INIT,
+	.GPGSA = GPGSA_INIT,
+	.GPGSV = {
+		        GPGSV_INIT,
+		        GPGSV_INIT,
+		        GPGSV_INIT,
+		        GPGSV_INIT,
+		        GPGSV_INIT,
+		        GPGSV_INIT,
+		        GPGSV_INIT,
+		        GPGSV_INIT,
+		        GPGSV_INIT,
+		    },
+	.GPGLL = GPGLL_INIT,
+};
+
 
 //expected struct with non tracking data
 //expected struct with second (incomplete) tracking data

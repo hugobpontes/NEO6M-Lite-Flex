@@ -519,7 +519,7 @@ TEST(Neo6m_GetBytesUntilSequenceEnd,FindsStringAtEnd)
 {
 	lwrb_skip(pRingBuf,740);
 	char mychar;
-	TEST_ASSERT_EQUAL_UINT32(9,GetBytesUntilSequenceEnd(pRingBuf,",0091"));
+	TEST_ASSERT_EQUAL_UINT32(9,GetBytesUntilSequenceEnd(pRingBuf,",0032"));
 }
 
 TEST(Neo6m_GetBytesUntilSequenceEnd,UnexistentStringReturnsFFFFFFFF)
@@ -842,18 +842,13 @@ TEST(Neo6m_FillInTrackingNeo6mMsgStruct,FillsAsExpectedFromTrackingData)
 {
 	ActualMsg = GetDefaultMsg(pRingBuf);
 
-	TEST_ASSERT(CompareGPRMC(&ActualMsg.GPRMC,&ExpectDefaultMsg_TrackingData.GPRMC));
-	TEST_ASSERT(CompareGPVTG(&ActualMsg.GPVTG,&ExpectDefaultMsg_TrackingData.GPVTG));
-	TEST_ASSERT(CompareGPGGA(&ActualMsg.GPGGA,&ExpectDefaultMsg_TrackingData.GPGGA));
-	TEST_ASSERT(CompareGPGSA(&ActualMsg.GPGSA,&ExpectDefaultMsg_TrackingData.GPGSA));
-	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[0],&ExpectDefaultMsg_TrackingData.GPGSV[0]));
-	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[1],&ExpectDefaultMsg_TrackingData.GPGSV[1]));
-	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[2],&ExpectDefaultMsg_TrackingData.GPGSV[2]));
-	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[3],&ExpectDefaultMsg_TrackingData.GPGSV[3]));
-	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[4],&ExpectDefaultMsg_TrackingData.GPGSV[4]));
-	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[5],&ExpectDefaultMsg_TrackingData.GPGSV[5]));
-	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[6],&ExpectDefaultMsg_TrackingData.GPGSV[6]));
-	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[7],&ExpectDefaultMsg_TrackingData.GPGSV[7]));
-	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[8],&ExpectDefaultMsg_TrackingData.GPGSV[8]));
-	//TEST_ASSERT(CompareDefaultMsg(&ActualMsg,&ExpectDefaultMsg_TrackingData));
+	TEST_ASSERT(CompareDefaultMsg(&ActualMsg,&ExpectDefaultMsg_TrackingData));
+}
+	/*Test only partially filled struct since buffer empty */
+TEST(Neo6m_FillInTrackingNeo6mMsgStruct,FillsAsExpectedFrom2ndTrackingData)
+{
+	ActualMsg = GetDefaultMsg(pRingBuf);
+	ActualMsg = GetDefaultMsg(pRingBuf);
+
+	TEST_ASSERT(CompareDefaultMsg(&ActualMsg,&ExpectDefaultMsg_2ndTrackingData));
 }

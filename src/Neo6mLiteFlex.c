@@ -438,7 +438,11 @@ static Neo6mLiteFlex_Date_t GetDate(lwrb_t* pRingBuf)
 
 	ReturnDate.Day = GetNextBytesAsInt(pRingBuf,2);
 	ReturnDate.Month = GetNextBytesAsInt(pRingBuf,2);
-	ReturnDate.Year = 2000+GetNextBytesAsInt(pRingBuf,2); /*Sadly will only work until 2099 :( */
+	ReturnDate.Year = GetNextBytesAsInt(pRingBuf,2);
+	if (ReturnDate.Year != UINT16_NOT_FOUND)
+	{
+		ReturnDate.Year+= 2000; /*Sadly will only work until 2099 :( */
+	}
 	return ReturnDate;
 }
 
@@ -473,7 +477,7 @@ static Neo6mLiteFlex_GPGSV_SatInfo_t GetSatInfo(lwrb_t* pRingBuf, bool IsLastFla
 
 static Neo6mLiteFlex_GPRMC_t GetGPRMC(lwrb_t* pRingBuf)
 {
-	Neo6mLiteFlex_GPRMC_t ReturnGPRMC;
+	Neo6mLiteFlex_GPRMC_t ReturnGPRMC = GPRMC_INIT;
 
 	SkipUntilEndOfSequence(pRingBuf, "$GPRMC,");
 
@@ -495,7 +499,7 @@ static Neo6mLiteFlex_GPRMC_t GetGPRMC(lwrb_t* pRingBuf)
 
 static Neo6mLiteFlex_GPVTG_t GetGPVTG(lwrb_t* pRingBuf)
 {
-	Neo6mLiteFlex_GPVTG_t ReturnGPVTG;
+	Neo6mLiteFlex_GPVTG_t ReturnGPVTG = GPVTG_INIT;
 
 	SkipUntilEndOfSequence(pRingBuf, "$GPVTG,");
 
@@ -515,7 +519,7 @@ static Neo6mLiteFlex_GPVTG_t GetGPVTG(lwrb_t* pRingBuf)
 
 static Neo6mLiteFlex_GPGGA_t GetGPGGA(lwrb_t* pRingBuf)
 {
-	Neo6mLiteFlex_GPGGA_t ReturnGPGGA;
+	Neo6mLiteFlex_GPGGA_t ReturnGPGGA = GPGGA_INIT;
 
 	SkipUntilEndOfSequence(pRingBuf, "$GPGGA,");
 
@@ -538,7 +542,7 @@ static Neo6mLiteFlex_GPGGA_t GetGPGGA(lwrb_t* pRingBuf)
 
 static Neo6mLiteFlex_GPGSA_t GetGPGSA(lwrb_t* pRingBuf)
 {
-	Neo6mLiteFlex_GPGSA_t ReturnGPGSA;
+	Neo6mLiteFlex_GPGSA_t ReturnGPGSA = GPGSA_INIT;
 
 	SkipUntilEndOfSequence(pRingBuf, "$GPGSA,");
 
@@ -585,6 +589,23 @@ static Neo6mLiteFlex_GPGSV_t GetGPGSV(lwrb_t* pRingBuf, uint32_t* SatsParsed)
 	return ReturnGPGSV;
 }
 
+static Neo6mLiteFlex_GPGLL_t GetGPGLL(lwrb_t* pRingBuf)
+{
+	Neo6mLiteFlex_GPGLL_t ReturnGPGLL = GPGLL_INIT;
+
+	SkipUntilEndOfSequence(pRingBuf, "$GPGLL,");
+
+	ReturnGPGLL.Latitude = GetDegDecMinutes(pRingBuf,2);
+	ReturnGPGLL.NS = GetCharBeforeSequence(pRingBuf,",");
+	ReturnGPGLL.Longitude = GetDegDecMinutes(pRingBuf,3);
+	ReturnGPGLL.EW = GetCharBeforeSequence(pRingBuf,",");
+	ReturnGPGLL.UtcTime = GetTime(pRingBuf);
+	ReturnGPGLL.DataStatus = GetCharBeforeSequence(pRingBuf,",");
+	ReturnGPGLL.FAAModeIndicator = GetCharBeforeSequence(pRingBuf,"*");
+
+	return ReturnGPGLL;
+}
+
 UT_STATIC Neo6mDefaultMsg_t GetDefaultMsg(lwrb_t* pRingBuf)
 {
 	Neo6mDefaultMsg_t ReturnMsg = NEO6M_MSG_INIT;
@@ -596,10 +617,13 @@ UT_STATIC Neo6mDefaultMsg_t GetDefaultMsg(lwrb_t* pRingBuf)
 	ReturnMsg.GPGGA 	= GetGPGGA(pRingBuf);
 	ReturnMsg.GPGSA 	= GetGPGSA(pRingBuf);
 	ReturnMsg.GPGSV[0] 	= GetGPGSV(pRingBuf,&GPGSV_SatsParsed);
-	for (int idx = 1; idx<ReturnMsg.GPGSV[0].GPGSVSentences;idx++)
-	{
-		ReturnMsg.GPGSV[idx] = GetGPGSV(pRingBuf,&GPGSV_SatsParsed);
-	}
+	if (ReturnMsg.GPGSV[0].GPGSVSentences != UINT16_NOT_FOUND){
+		for (int idx = 1; idx<ReturnMsg.GPGSV[0].GPGSVSentences;idx++)
+		{
+			ReturnMsg.GPGSV[idx] = GetGPGSV(pRingBuf,&GPGSV_SatsParsed);
+		}
+	 }
+	ReturnMsg.GPGLL = GetGPGLL(pRingBuf);
 
 	return ReturnMsg;
 }

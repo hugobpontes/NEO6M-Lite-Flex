@@ -268,7 +268,7 @@ uint8_t* Neo6mLiteFlex_GetByteArray(Neo6mLiteFlex_t Neo6mLiteFlex);
 #define GPGGA_INIT {\
     .UtcTime = TIME_INIT,\
     .Latitude = COORDINATE_INIT,\
-    .NS = 0,\
+    .NS = CHAR_NOT_FOUND,\
     .Longitude = COORDINATE_INIT,\
     .EW = CHAR_NOT_FOUND,\
     .GpsQuality = FLOAT_NOT_FOUND,\
