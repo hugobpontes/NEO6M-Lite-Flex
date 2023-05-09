@@ -70,21 +70,21 @@ typedef struct Neo6mLiteFlexStruct* Neo6mLiteFlex_t;
 
 typedef struct Time
 {
-	uint8_t Hours;
-	uint8_t Minutes;
+	uint16_t Hours;
+	uint16_t Minutes;
 	float Seconds;
 } Neo6mLiteFlex_Time_t;
 
 typedef struct Date
 {
 	uint16_t Year;
-	uint8_t Month;
-	uint8_t Day;
+	uint16_t Month;
+	uint16_t Day;
 } Neo6mLiteFlex_Date_t;
 
 typedef struct DegDecMinutes
 {
-	uint8_t Degrees;
+	uint16_t Degrees;
 	float DecimalMinutes;
 } Neo6mLiteFlex_DegDecMinutes_t;
 
@@ -173,7 +173,7 @@ typedef struct Neo6mDefaultMsg
 	Neo6mLiteFlex_GPVTG_t GPVTG;
 	Neo6mLiteFlex_GPGGA_t GPGGA;
 	Neo6mLiteFlex_GPGSA_t GPGSA;
-	Neo6mLiteFlex_GPGSV_t GPGSV[2];
+	Neo6mLiteFlex_GPGSV_t GPGSV[9];
 	Neo6mLiteFlex_GPGLL_t GPGLL;
 } Neo6mDefaultMsg_t;
 
@@ -183,5 +183,132 @@ void Neo6mLiteFlex_SetIORead(Neo6mLiteFlex_t Neo6mLiteFlex, IOFunc_t pIORead);
 lwrb_t* Neo6mLiteFlex_GetRingBuffPtr(Neo6mLiteFlex_t Neo6mLiteFlex);
 uint8_t* Neo6mLiteFlex_GetByteArray(Neo6mLiteFlex_t Neo6mLiteFlex);
 
+#define TIME_INIT {\
+    .Hours = UINT16_NOT_FOUND,\
+    .Minutes = UINT16_NOT_FOUND,\
+    .Seconds = FLOAT_NOT_FOUND\
+}
+
+#define LOCATION_INIT \
+    .Latitude = COORDINATE_INIT,\
+    .NS = CHAR_NOT_FOUND,\
+    .Longitude = COORDINATE_INIT,\
+    .EW = CHAR_NOT_FOUND,\
+
+#define COORDINATE_INIT {\
+    .Degrees = UINT16_NOT_FOUND,\
+    .DecimalMinutes = FLOAT_NOT_FOUND\
+}
+
+#define DATE_INIT {\
+    .Year = UINT16_NOT_FOUND,\
+    .Month = UINT16_NOT_FOUND,\
+    .Day = UINT16_NOT_FOUND\
+}
+
+#define PRN_INIT { \
+    UINT16_NOT_FOUND, \
+    UINT16_NOT_FOUND, \
+    UINT16_NOT_FOUND, \
+    UINT16_NOT_FOUND, \
+    UINT16_NOT_FOUND, \
+    UINT16_NOT_FOUND, \
+    UINT16_NOT_FOUND, \
+    UINT16_NOT_FOUND, \
+    UINT16_NOT_FOUND, \
+    UINT16_NOT_FOUND, \
+    UINT16_NOT_FOUND, \
+    UINT16_NOT_FOUND \
+}
+
+#define SAT_INFO_INIT \
+    {\
+        .PRN = UINT16_NOT_FOUND,\
+        .Elevation = UINT16_NOT_FOUND,\
+        .Azimuth = UINT16_NOT_FOUND,\
+        .SNR = UINT16_NOT_FOUND\
+    }
+
+#define GPGSV_INIT {\
+    .GPGSVSentences = UINT16_NOT_FOUND,\
+    .SentenceIndex = UINT16_NOT_FOUND,\
+    .SatsInView = UINT16_NOT_FOUND,\
+    .SatInfo = {\
+        SAT_INFO_INIT,\
+        SAT_INFO_INIT,\
+        SAT_INFO_INIT,\
+        SAT_INFO_INIT\
+    }\
+}
+
+#define GPRMC_INIT { \
+    .UtcTime = TIME_INIT, \
+    .Status = CHAR_NOT_FOUND, \
+    .Latitude = COORDINATE_INIT, \
+    .NS = CHAR_NOT_FOUND, \
+    .Longitude = COORDINATE_INIT, \
+    .EW = CHAR_NOT_FOUND, \
+    .Speed = FLOAT_NOT_FOUND, \
+    .TrackMadeGood = FLOAT_NOT_FOUND, \
+    .Date = DATE_INIT, \
+    .MagneticVariation = FLOAT_NOT_FOUND, \
+    .EW_MV = CHAR_NOT_FOUND, \
+    .DataStatus = CHAR_NOT_FOUND \
+}
+
+#define GPVTG_INIT \
+{ \
+	.TrueTrackDegrees = FLOAT_NOT_FOUND, \
+	.MagneticTrackDegrees = FLOAT_NOT_FOUND, \
+	.SpeedKnots = FLOAT_NOT_FOUND, \
+	.SpeedKph = FLOAT_NOT_FOUND, \
+	.DataStatus = CHAR_NOT_FOUND, \
+}
+
+#define GPGGA_INIT {\
+    .UtcTime = TIME_INIT,\
+    .Latitude = COORDINATE_INIT,\
+    .NS = 0,\
+    .Longitude = COORDINATE_INIT,\
+    .EW = CHAR_NOT_FOUND,\
+    .GpsQuality = FLOAT_NOT_FOUND,\
+    .SatsInView = UINT16_NOT_FOUND,\
+    .HDOP = FLOAT_NOT_FOUND,\
+    .AntennaAltitude = FLOAT_NOT_FOUND,\
+    .GeoIdalSeparation = FLOAT_NOT_FOUND,\
+    .GpsDataAge = FLOAT_NOT_FOUND,\
+    .RefStationId = UINT16_NOT_FOUND\
+}
+
+#define GPGSA_INIT {CHAR_NOT_FOUND, CHAR_NOT_FOUND, PRN_INIT, FLOAT_NOT_FOUND, FLOAT_NOT_FOUND, FLOAT_NOT_FOUND}
+
+#define GPGLL_INIT \
+    { \
+        .Latitude = COORDINATE_INIT, \
+        .NS = CHAR_NOT_FOUND, \
+        .Longitude = COORDINATE_INIT, \
+        .EW = CHAR_NOT_FOUND, \
+        .UtcTime = TIME_INIT, \
+        .DataStatus = CHAR_NOT_FOUND, \
+        .FAAModeIndicator = CHAR_NOT_FOUND \
+    }
+#define NEO6M_MSG_INIT { \
+	    .GPRMC = GPRMC_INIT, \
+	    .GPVTG = GPVTG_INIT, \
+	    .GPGGA = GPGGA_INIT, \
+	    .GPGSA = GPGSA_INIT, \
+	    .GPGSV = { \
+	        GPGSV_INIT, \
+	        GPGSV_INIT, \
+	        GPGSV_INIT, \
+	        GPGSV_INIT, \
+	        GPGSV_INIT, \
+	        GPGSV_INIT, \
+	        GPGSV_INIT, \
+	        GPGSV_INIT, \
+	        GPGSV_INIT, \
+	    }, \
+	    .GPGLL = GPGLL_INIT, \
+	}
 
 #endif /* NEO6MLITEFLEX_H_ */

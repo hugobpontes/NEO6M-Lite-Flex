@@ -87,141 +87,6 @@ static char Neo6mTrackingUnexpectedDataSet[] =
 		"$GPGLL,2769.50696,N,00321.52135,W,140722.00,A,A*74ZZ"
 		"$GPRMC,140722.00,A,2769.50696,N,0091";
 
-static Neo6mDefaultMsg_t ExpectTemplate =
-{
-	.GPRMC =
-	{
-		.UtcTime =
-		{
-				.Hours = 0,
-				.Minutes = 0,
-				.Seconds = 0,
-		},
-		.Status = 0,
-		.Latitude =
-		{
-				.Degrees = 0,
-				.DecimalMinutes = 0,
-		},
-		.NS = 0,
-		.Longitude =
-		{
-				.Degrees = 0,
-				.DecimalMinutes = 0,
-		},
-		.EW = 0,
-		.Speed = 0,
-		.TrackMadeGood=0,
-		.Date =
-		{
-				.Year = 0,
-				.Month = 0,
-				.Day = 0,
-		},
-		.MagneticVariation = 0,
-		.EW_MV = 0,
-		.DataStatus = 0,
-
-	},
-	.GPVTG =
-	{
-			.TrueTrackDegrees = 0,
-			.MagneticTrackDegrees = 0,
-			.SpeedKnots = 0,
-			.SpeedKph = 0,
-			.DataStatus = 0,
-	},
-	.GPGGA =
-	{
-		.UtcTime =
-		{
-				.Hours = 0,
-				.Minutes = 0,
-				.Seconds = 0,
-		},
-		.Latitude =
-		{
-				.Degrees = 0,
-				.DecimalMinutes = 0,
-		},
-		.NS = 0,
-		.Longitude =
-		{
-				.Degrees = 0,
-				.DecimalMinutes = 0,
-		},
-		.EW = 0,
-		.GpsQuality = 0,
-		.SatsInView = 0,
-		.HDOP = 0,
-		.AntennaAltitude = 0,
-		.GeoIdalSeparation = 0,
-		.GpsDataAge = 0,
-		.RefStationId = 0,
-	},
-	.GPGSA =
-	{
-		.ModeMA = 0,
-		.Mode123 = 0,
-		.PRN = {0,0,0,0,0,0,0,0,0,0,0,0},
-		.PDOP = 0,
-		.HDOP = 0,
-		.VDOP = 0,
-	},
-	.GPGSV =
-	{
-		{
-			.GPGSVSentences = 0,
-			.SentenceIndex = 0,
-			.SatsInView = 0,
-			.SatInfo =
-			{
-				{.PRN = 0,.Elevation = 0,.Azimuth = 0,.SNR = 0},
-				{.PRN = 0,.Elevation = 0,.Azimuth = 0,.SNR = 0},
-				{.PRN = 0,.Elevation = 0,.Azimuth = 0,.SNR = 0},
-				{.PRN = 0,.Elevation = 0,.Azimuth = 0,.SNR = 0},
-			},
-		},
-		{
-			.GPGSVSentences = 0,
-			.SentenceIndex = 0,
-			.SatsInView = 0,
-			.SatInfo =
-			{
-				{.PRN = 0,.Elevation = 0,.Azimuth = 0,.SNR = 0},
-				{.PRN = 0,.Elevation = 0,.Azimuth = 0,.SNR = 0},
-				{.PRN = 0,.Elevation = 0,.Azimuth = 0,.SNR = 0},
-				{.PRN = 0,.Elevation = 0,.Azimuth = 0,.SNR = 0},
-			},
-		},
-
-	},
-	.GPGLL =
-	{
-		.Latitude =
-		{
-				.Degrees = 0,
-				.DecimalMinutes = 0,
-		},
-		.NS = 0,
-		.Longitude =
-		{
-				.Degrees = 0,
-				.DecimalMinutes = 0,
-		},
-		.EW = 0,
-		.UtcTime =
-		{
-				.Hours = 0,
-				.Minutes = 0,
-				.Seconds = 0,
-		},
-		.DataStatus = 0,
-		.FAAModeIndicator = 0
-	},
-};
-
-
 static Neo6mDefaultMsg_t ExpectDefaultMsg_TrackingData =
 {
 	.GPRMC =
@@ -251,7 +116,7 @@ static Neo6mDefaultMsg_t ExpectDefaultMsg_TrackingData =
 		{
 				.Year = 2023,
 				.Month = 04,
-				.Day = 23,
+				.Day = 29,
 		},
 		.MagneticVariation = FLOAT_NOT_FOUND,
 		.EW_MV = CHAR_NOT_FOUND,
@@ -329,6 +194,13 @@ static Neo6mDefaultMsg_t ExpectDefaultMsg_TrackingData =
 				{.PRN = UINT16_NOT_FOUND,.Elevation = UINT16_NOT_FOUND,.Azimuth = UINT16_NOT_FOUND,.SNR = UINT16_NOT_FOUND},
 			},
 		},
+		GPGSV_INIT,
+		GPGSV_INIT,
+		GPGSV_INIT,
+		GPGSV_INIT,
+		GPGSV_INIT,
+		GPGSV_INIT,
+		GPGSV_INIT,
 
 	},
 	.GPGLL =

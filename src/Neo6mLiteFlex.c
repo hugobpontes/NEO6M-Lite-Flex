@@ -29,6 +29,14 @@
     __typeof__ (b) _b = (b); \
     _a < _b ? _a : _b;       \
 })
+
+ #define max(a,b) 				 \
+({								 \
+		__typeof__ (a) _a = (a); \
+		__typeof__ (b) _b = (b); \
+		_a > _b ? _a : _b; 		 \
+})
+
 /**
  * @brief Struct that will only be visible to the outside as an abstract type. Represents an instance of an
  * Neo6mLiteFlex object.
@@ -406,7 +414,192 @@ UT_STATIC uint16_t GetNextBytesAsInt(lwrb_t* pRingBuf,uint32_t BytesToRead)
 	return NextBytesAsInt;
 }
 
+static void SkipUntilEndOfSequence(lwrb_t* pRingBuf, char* Sequence)
+{
+	uint32_t BytesToSkip;
+	BytesToSkip = GetBytesUntilSequenceEnd(pRingBuf,Sequence);
+	lwrb_skip(pRingBuf,BytesToSkip);
+}
+
+static Neo6mLiteFlex_Time_t GetTime(lwrb_t* pRingBuf)
+{
+	Neo6mLiteFlex_Time_t ReturnTime;
+
+	ReturnTime.Hours = GetNextBytesAsInt(pRingBuf,2);
+	ReturnTime.Minutes = GetNextBytesAsInt(pRingBuf,2);
+	ReturnTime.Seconds = GetFloatUntilSequence(pRingBuf,",");
+
+	return ReturnTime;
+}
+
+static Neo6mLiteFlex_Date_t GetDate(lwrb_t* pRingBuf)
+{
+	Neo6mLiteFlex_Date_t ReturnDate;
+
+	ReturnDate.Day = GetNextBytesAsInt(pRingBuf,2);
+	ReturnDate.Month = GetNextBytesAsInt(pRingBuf,2);
+	ReturnDate.Year = 2000+GetNextBytesAsInt(pRingBuf,2); /*Sadly will only work until 2099 :( */
+	return ReturnDate;
+}
+
+static Neo6mLiteFlex_DegDecMinutes_t GetDegDecMinutes(lwrb_t* pRingBuf, uint8_t DegDigits)
+{
+	Neo6mLiteFlex_DegDecMinutes_t ReturnDegDecMinutes;
+
+	ReturnDegDecMinutes.Degrees = GetNextBytesAsInt(pRingBuf,DegDigits);
+	ReturnDegDecMinutes.DecimalMinutes = GetFloatUntilSequence(pRingBuf,",");
+
+	return ReturnDegDecMinutes;
+}
+
+static Neo6mLiteFlex_GPGSV_SatInfo_t GetSatInfo(lwrb_t* pRingBuf, bool IsLastFlag)
+{
+	Neo6mLiteFlex_GPGSV_SatInfo_t ReturnSatInfo;
+
+	ReturnSatInfo.PRN = GetIntUntilSequence(pRingBuf,",");
+	ReturnSatInfo.Elevation = GetIntUntilSequence(pRingBuf,",");
+	ReturnSatInfo.Azimuth = GetIntUntilSequence(pRingBuf,",");
+	if (IsLastFlag)
+	{
+		ReturnSatInfo.SNR = GetIntUntilSequence(pRingBuf,"*");
+	}
+	else
+	{
+		ReturnSatInfo.SNR = GetIntUntilSequence(pRingBuf,",");
+	}
+
+	return ReturnSatInfo;
+}
+
+static Neo6mLiteFlex_GPRMC_t GetGPRMC(lwrb_t* pRingBuf)
+{
+	Neo6mLiteFlex_GPRMC_t ReturnGPRMC;
+
+	SkipUntilEndOfSequence(pRingBuf, "$GPRMC,");
+
+	ReturnGPRMC.UtcTime = GetTime(pRingBuf);
+	ReturnGPRMC.Status = GetCharBeforeSequence(pRingBuf,",");
+	ReturnGPRMC.Latitude = GetDegDecMinutes(pRingBuf,2);
+	ReturnGPRMC.NS = GetCharBeforeSequence(pRingBuf,",");
+	ReturnGPRMC.Longitude = GetDegDecMinutes(pRingBuf,3);
+	ReturnGPRMC.EW = GetCharBeforeSequence(pRingBuf,",");
+	ReturnGPRMC.Speed = GetFloatUntilSequence(pRingBuf,",");
+    ReturnGPRMC.TrackMadeGood = GetFloatUntilSequence(pRingBuf,",");
+    ReturnGPRMC.Date =  GetDate(pRingBuf);
+    ReturnGPRMC.MagneticVariation = GetFloatUntilSequence(pRingBuf, ",");
+    ReturnGPRMC.EW_MV = GetCharBeforeSequence(pRingBuf,",");
+    ReturnGPRMC.DataStatus = GetCharBeforeSequence(pRingBuf,"*");
+
+    return ReturnGPRMC;
+}
+
+static Neo6mLiteFlex_GPVTG_t GetGPVTG(lwrb_t* pRingBuf)
+{
+	Neo6mLiteFlex_GPVTG_t ReturnGPVTG;
+
+	SkipUntilEndOfSequence(pRingBuf, "$GPVTG,");
+
+	ReturnGPVTG.TrueTrackDegrees = GetFloatUntilSequence(pRingBuf,",");
+	lwrb_skip(pRingBuf,2);
+	ReturnGPVTG.MagneticTrackDegrees = GetFloatUntilSequence(pRingBuf,",");
+	lwrb_skip(pRingBuf,2);
+	ReturnGPVTG.SpeedKnots = GetFloatUntilSequence(pRingBuf,",");
+	lwrb_skip(pRingBuf,2);
+	ReturnGPVTG.SpeedKph = GetFloatUntilSequence(pRingBuf,",");
+	lwrb_skip(pRingBuf,2);
+	ReturnGPVTG.DataStatus = GetCharBeforeSequence(pRingBuf,"*");
+
+	return ReturnGPVTG;
+
+}
+
+static Neo6mLiteFlex_GPGGA_t GetGPGGA(lwrb_t* pRingBuf)
+{
+	Neo6mLiteFlex_GPGGA_t ReturnGPGGA;
+
+	SkipUntilEndOfSequence(pRingBuf, "$GPGGA,");
+
+	ReturnGPGGA.UtcTime = GetTime(pRingBuf);
+	ReturnGPGGA.Latitude = GetDegDecMinutes(pRingBuf,2);
+	ReturnGPGGA.NS = GetCharBeforeSequence(pRingBuf,",");
+	ReturnGPGGA.Longitude = GetDegDecMinutes(pRingBuf,3);
+	ReturnGPGGA.EW = GetCharBeforeSequence(pRingBuf,",");
+	ReturnGPGGA.GpsQuality = GetFloatUntilSequence(pRingBuf, ",");
+	ReturnGPGGA.SatsInView = GetIntUntilSequence(pRingBuf, ",");
+	ReturnGPGGA.HDOP = GetFloatUntilSequence(pRingBuf, ",");
+	ReturnGPGGA.AntennaAltitude = GetFloatUntilSequence(pRingBuf, ",");
+	lwrb_skip(pRingBuf,2);
+	ReturnGPGGA.GeoIdalSeparation = GetFloatUntilSequence(pRingBuf, ",");
+	ReturnGPGGA.GpsDataAge = GetFloatUntilSequence(pRingBuf, ",");
+	ReturnGPGGA.RefStationId = GetIntUntilSequence(pRingBuf, "*");
+
+	return ReturnGPGGA;
+}
+
+static Neo6mLiteFlex_GPGSA_t GetGPGSA(lwrb_t* pRingBuf)
+{
+	Neo6mLiteFlex_GPGSA_t ReturnGPGSA;
+
+	SkipUntilEndOfSequence(pRingBuf, "$GPGSA,");
+
+	ReturnGPGSA.ModeMA = GetCharBeforeSequence(pRingBuf,",");
+	ReturnGPGSA.Mode123 = GetCharBeforeSequence(pRingBuf,",");
+	for (int idx = 0; idx<12;idx++)
+	{
+		ReturnGPGSA.PRN[idx] = GetIntUntilSequence(pRingBuf,",");
+	}
+
+	ReturnGPGSA.PDOP = GetFloatUntilSequence(pRingBuf, ",");
+	ReturnGPGSA.HDOP = GetFloatUntilSequence(pRingBuf, ",");
+	ReturnGPGSA.VDOP = GetFloatUntilSequence(pRingBuf, "*");
+
+	return ReturnGPGSA;
+}
+
+static Neo6mLiteFlex_GPGSV_t GetGPGSV(lwrb_t* pRingBuf, uint32_t* SatsParsed)
+{
+	Neo6mLiteFlex_GPGSV_t ReturnGPGSV = GPGSV_INIT;
+
+	SkipUntilEndOfSequence(pRingBuf, "$GPGSV,");
+
+	ReturnGPGSV.GPGSVSentences = GetIntUntilSequence(pRingBuf, ",");
+	ReturnGPGSV.SentenceIndex = GetIntUntilSequence(pRingBuf, ",");
+	ReturnGPGSV.SatsInView = GetIntUntilSequence(pRingBuf, ",");
+
+	uint32_t SatsToParse = min(4,ReturnGPGSV.SatsInView-*SatsParsed);
+
+	for (int idx = 0;idx<SatsToParse;idx++)
+	{
+		if (idx != (SatsToParse-1)) //Check if its last sat info in a sentence
+		{
+			ReturnGPGSV.SatInfo[idx] = GetSatInfo(pRingBuf, false);
+		}
+		else
+		{
+			ReturnGPGSV.SatInfo[idx] = GetSatInfo(pRingBuf, true);
+		}
+	}
+
+	*SatsParsed+=SatsToParse;
+
+	return ReturnGPGSV;
+}
+
 UT_STATIC Neo6mDefaultMsg_t GetDefaultMsg(lwrb_t* pRingBuf)
 {
+	Neo6mDefaultMsg_t ReturnMsg = NEO6M_MSG_INIT;
 
+	uint32_t GPGSV_SatsParsed = 0;
+
+	ReturnMsg.GPRMC 	= GetGPRMC(pRingBuf);
+	ReturnMsg.GPVTG 	= GetGPVTG(pRingBuf);
+	ReturnMsg.GPGGA 	= GetGPGGA(pRingBuf);
+	ReturnMsg.GPGSA 	= GetGPGSA(pRingBuf);
+	ReturnMsg.GPGSV[0] 	= GetGPGSV(pRingBuf,&GPGSV_SatsParsed);
+	for (int idx = 1; idx<ReturnMsg.GPGSV[0].GPGSVSentences;idx++)
+	{
+		ReturnMsg.GPGSV[idx] = GetGPGSV(pRingBuf,&GPGSV_SatsParsed);
+	}
+
+	return ReturnMsg;
 }

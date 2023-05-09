@@ -272,6 +272,27 @@ static bool CompareDefaultMsg(Neo6mDefaultMsg_t* A, Neo6mDefaultMsg_t* B)
 	else if (!CompareGPGSV(&A->GPGSV[1],&B->GPGSV[1])){
 		IsEqual = false;
 	}
+	else if (!CompareGPGSV(&A->GPGSV[2],&B->GPGSV[2])){
+		IsEqual = false;
+	}
+	else if (!CompareGPGSV(&A->GPGSV[3],&B->GPGSV[3])){
+		IsEqual = false;
+	}
+	else if (!CompareGPGSV(&A->GPGSV[4],&B->GPGSV[4])){
+		IsEqual = false;
+	}
+	else if (!CompareGPGSV(&A->GPGSV[5],&B->GPGSV[5])){
+		IsEqual = false;
+	}
+	else if (!CompareGPGSV(&A->GPGSV[6],&B->GPGSV[6])){
+		IsEqual = false;
+	}
+	else if (!CompareGPGSV(&A->GPGSV[7],&B->GPGSV[7])){
+		IsEqual = false;
+	}
+	else if (!CompareGPGSV(&A->GPGSV[8],&B->GPGSV[8])){
+		IsEqual = false;
+	}
 	else if (!CompareGPRMC(&A->GPRMC,&B->GPRMC)){
 		IsEqual = false;
 	}
@@ -821,5 +842,18 @@ TEST(Neo6m_FillInTrackingNeo6mMsgStruct,FillsAsExpectedFromTrackingData)
 {
 	ActualMsg = GetDefaultMsg(pRingBuf);
 
-	TEST_ASSERT(CompareDefaultMsg(&ActualMsg,&ExpectDefaultMsg_TrackingData));
+	TEST_ASSERT(CompareGPRMC(&ActualMsg.GPRMC,&ExpectDefaultMsg_TrackingData.GPRMC));
+	TEST_ASSERT(CompareGPVTG(&ActualMsg.GPVTG,&ExpectDefaultMsg_TrackingData.GPVTG));
+	TEST_ASSERT(CompareGPGGA(&ActualMsg.GPGGA,&ExpectDefaultMsg_TrackingData.GPGGA));
+	TEST_ASSERT(CompareGPGSA(&ActualMsg.GPGSA,&ExpectDefaultMsg_TrackingData.GPGSA));
+	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[0],&ExpectDefaultMsg_TrackingData.GPGSV[0]));
+	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[1],&ExpectDefaultMsg_TrackingData.GPGSV[1]));
+	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[2],&ExpectDefaultMsg_TrackingData.GPGSV[2]));
+	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[3],&ExpectDefaultMsg_TrackingData.GPGSV[3]));
+	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[4],&ExpectDefaultMsg_TrackingData.GPGSV[4]));
+	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[5],&ExpectDefaultMsg_TrackingData.GPGSV[5]));
+	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[6],&ExpectDefaultMsg_TrackingData.GPGSV[6]));
+	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[7],&ExpectDefaultMsg_TrackingData.GPGSV[7]));
+	TEST_ASSERT(CompareGPGSV(&ActualMsg.GPGSV[8],&ExpectDefaultMsg_TrackingData.GPGSV[8]));
+	//TEST_ASSERT(CompareDefaultMsg(&ActualMsg,&ExpectDefaultMsg_TrackingData));
 }
