@@ -19,6 +19,8 @@ static uint8_t ActualBuf[NEO6M_BATCH_BUFFER_SIZE];
 static size_t OldReadPointer;
 static size_t NewReadPointer;
 static Neo6mDefaultMsg_t ActualMsg;
+static Neo6mDefaultMsg_t DefaultMsg = NEO6M_MSG_INIT;
+static Neo6mDefaultMsg_t ExpectedMsg;
 
 static bool CompareTime(Neo6mLiteFlex_Time_t* A, Neo6mLiteFlex_Time_t* B)
 {
@@ -257,10 +259,13 @@ static bool CompareGPGLL(Neo6mLiteFlex_GPGLL_t* A, Neo6mLiteFlex_GPGLL_t* B)
 static bool CompareDefaultMsg(Neo6mDefaultMsg_t* A, Neo6mDefaultMsg_t* B)
 {
 	bool IsEqual = true;
-	if (!CompareGPGGA(&A->GPGGA,&B->GPGGA)){
+	if (!CompareGPRMC(&A->GPRMC,&B->GPRMC)){
 		IsEqual = false;
 	}
-	else if (!CompareGPGLL(&A->GPGLL,&B->GPGLL)){
+	else if (!CompareGPVTG(&A->GPVTG,&B->GPVTG)){
+		IsEqual = false;
+	}
+	else if (!CompareGPGGA(&A->GPGGA,&B->GPGGA)){
 		IsEqual = false;
 	}
 	else if (!CompareGPGSA(&A->GPGSA,&B->GPGSA)){
@@ -293,10 +298,7 @@ static bool CompareDefaultMsg(Neo6mDefaultMsg_t* A, Neo6mDefaultMsg_t* B)
 	else if (!CompareGPGSV(&A->GPGSV[8],&B->GPGSV[8])){
 		IsEqual = false;
 	}
-	else if (!CompareGPRMC(&A->GPRMC,&B->GPRMC)){
-		IsEqual = false;
-	}
-	else if (!CompareGPVTG(&A->GPVTG,&B->GPVTG)){
+	else if (!CompareGPGLL(&A->GPGLL,&B->GPGLL)){
 		IsEqual = false;
 	}
 	return IsEqual;
@@ -842,7 +844,9 @@ TEST(Neo6m_FillInTrackingNeo6mMsgStruct,FillsAsExpectedFromTrackingData)
 {
 	ActualMsg = GetDefaultMsg(pRingBuf);
 
-	TEST_ASSERT(CompareDefaultMsg(&ActualMsg,&ExpectDefaultMsg_TrackingData));
+	ExpectedMsg = ExpectDefaultMsg_TrackingData;
+
+	TEST_ASSERT(CompareDefaultMsg(&ActualMsg,&ExpectedMsg));
 }
 	/*Test only partially filled struct since buffer empty */
 TEST(Neo6m_FillInTrackingNeo6mMsgStruct,FillsAsExpectedFrom2ndTrackingData)
@@ -850,5 +854,59 @@ TEST(Neo6m_FillInTrackingNeo6mMsgStruct,FillsAsExpectedFrom2ndTrackingData)
 	ActualMsg = GetDefaultMsg(pRingBuf);
 	ActualMsg = GetDefaultMsg(pRingBuf);
 
-	TEST_ASSERT(CompareDefaultMsg(&ActualMsg,&ExpectDefaultMsg_2ndTrackingData));
+	ExpectedMsg = ExpectDefaultMsg_2ndTrackingData;
+
+	TEST_ASSERT(CompareDefaultMsg(&ActualMsg,&ExpectedMsg));
 }
+
+/*----------------------------------------------------------------------------------*/
+
+TEST_GROUP(Neo6m_FillInNonTrackingNeo6mMsgStruct);
+
+TEST_SETUP(Neo6m_FillInNonTrackingNeo6mMsgStruct)
+{
+	MockNeo6m_Create(20);
+	Neo6m = Neo6mLiteFlex_Create();
+	Neo6mLiteFlex_SetIORead(Neo6m, MockNeo6m_Read);
+
+	pRingBuf = Neo6mLiteFlex_GetRingBuffPtr(Neo6m);
+	ByteArray = Neo6mLiteFlex_GetByteArray(Neo6m);
+
+	ExpectedMsg = DefaultMsg;
+
+	ExpectedMsg.GPRMC.Status = 'V';
+	ExpectedMsg.GPRMC.DataStatus = 'N';
+	ExpectedMsg.GPVTG.DataStatus = 'N';
+	ExpectedMsg.GPGGA.GpsQuality = 0;
+	ExpectedMsg.GPGGA.SatsInView = 0;
+	ExpectedMsg.GPGGA.HDOP = 99.99;
+	ExpectedMsg.GPGSA.ModeMA = 'A';
+	ExpectedMsg.GPGSA.Mode123 = '1';
+	ExpectedMsg.GPGSA.PDOP = 99.99;
+	ExpectedMsg.GPGSA.VDOP = 99.99;
+	ExpectedMsg.GPGSA.HDOP = 99.99;
+	ExpectedMsg.GPGSV[0].GPGSVSentences = 1;
+	ExpectedMsg.GPGSV[0].SentenceIndex = 1;
+	ExpectedMsg.GPGSV[0].SatsInView = 0;
+	ExpectedMsg.GPGLL.DataStatus = 'V';
+	ExpectedMsg.GPGLL.FAAModeIndicator = 'N';
+
+	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mNonTrackingDataSet, NEO6M_BATCH_SIZE);
+	IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
+
+	OldReadPointer = pRingBuf->r;
+}
+
+TEST_TEAR_DOWN(Neo6m_FillInNonTrackingNeo6mMsgStruct)
+{
+	MockNeo6m_VerifyComplete();
+	MockNeo6m_Destroy();
+}
+
+TEST(Neo6m_FillInNonTrackingNeo6mMsgStruct,FillsAsExpectedFromNonTrackingData)
+{
+	ActualMsg = GetDefaultMsg(pRingBuf);
+
+	TEST_ASSERT(CompareDefaultMsg(&ActualMsg,&ExpectedMsg));
+}
+

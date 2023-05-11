@@ -14,6 +14,10 @@
  * @brief Macro defining the maximum size of a sequence that can be sought
  */
 #define MAX_SEQUENCE_SIZE 10
+
+
+#define NEXT_CHAR_READ_ISNT_COMMA GetBytesUntilSequence(pRingBuf,",",1)
+#define NEXT_CHAR_READ_ISNT_ASTERISK GetBytesUntilSequence(pRingBuf,"*",1)
 /**
  * @brief Macro defining the maximum number of chars that a string representing a float
  * can have, including the decimal point
@@ -423,46 +427,67 @@ static void SkipUntilEndOfSequence(lwrb_t* pRingBuf, char* Sequence)
 
 static Neo6mLiteFlex_Time_t GetTime(lwrb_t* pRingBuf)
 {
-	Neo6mLiteFlex_Time_t ReturnTime;
+	Neo6mLiteFlex_Time_t ReturnTime = TIME_INIT;
 
-	ReturnTime.Hours = GetNextBytesAsInt(pRingBuf,2);
-	ReturnTime.Minutes = GetNextBytesAsInt(pRingBuf,2);
-	ReturnTime.Seconds = GetFloatUntilSequence(pRingBuf,",");
+	if (NEXT_CHAR_READ_ISNT_COMMA)
+	{
+		ReturnTime.Hours = GetNextBytesAsInt(pRingBuf,2);
+		ReturnTime.Minutes = GetNextBytesAsInt(pRingBuf,2);
+		ReturnTime.Seconds = GetFloatUntilSequence(pRingBuf,",");
+	}
+	else
+	{
+		lwrb_skip(pRingBuf,1);
+	}
 
 	return ReturnTime;
 }
 
 static Neo6mLiteFlex_Date_t GetDate(lwrb_t* pRingBuf)
 {
-	Neo6mLiteFlex_Date_t ReturnDate;
+	Neo6mLiteFlex_Date_t ReturnDate = DATE_INIT;
 
-	ReturnDate.Day = GetNextBytesAsInt(pRingBuf,2);
-	ReturnDate.Month = GetNextBytesAsInt(pRingBuf,2);
-	ReturnDate.Year = GetNextBytesAsInt(pRingBuf,2);
-	if (ReturnDate.Year != UINT16_NOT_FOUND)
+	if (NEXT_CHAR_READ_ISNT_COMMA)
 	{
-		ReturnDate.Year+= 2000; /*Sadly will only work until 2099 :( */
+		ReturnDate.Day = GetNextBytesAsInt(pRingBuf,2);
+		ReturnDate.Month = GetNextBytesAsInt(pRingBuf,2);
+		ReturnDate.Year = GetNextBytesAsInt(pRingBuf,2);
+		if (ReturnDate.Year != UINT16_NOT_FOUND)
+		{
+			ReturnDate.Year+= 2000; /*Sadly will only work until 2099 :( */
+		}
+	}
+	else
+	{
+		lwrb_skip(pRingBuf,1);
 	}
 	return ReturnDate;
 }
 
 static Neo6mLiteFlex_DegDecMinutes_t GetDegDecMinutes(lwrb_t* pRingBuf, uint8_t DegDigits)
 {
-	Neo6mLiteFlex_DegDecMinutes_t ReturnDegDecMinutes;
+	Neo6mLiteFlex_DegDecMinutes_t ReturnDegDecMinutes = COORDINATE_INIT;
 
-	ReturnDegDecMinutes.Degrees = GetNextBytesAsInt(pRingBuf,DegDigits);
-	ReturnDegDecMinutes.DecimalMinutes = GetFloatUntilSequence(pRingBuf,",");
+	if (NEXT_CHAR_READ_ISNT_COMMA)
+	{
+		ReturnDegDecMinutes.Degrees = GetNextBytesAsInt(pRingBuf,DegDigits);
+		ReturnDegDecMinutes.DecimalMinutes = GetFloatUntilSequence(pRingBuf,",");
+	}
+	else
+	{
+		lwrb_skip(pRingBuf,1);
+	}
 
 	return ReturnDegDecMinutes;
 }
 
 static Neo6mLiteFlex_GPGSV_SatInfo_t GetSatInfo(lwrb_t* pRingBuf, bool IsLastFlag)
 {
-	Neo6mLiteFlex_GPGSV_SatInfo_t ReturnSatInfo;
+	Neo6mLiteFlex_GPGSV_SatInfo_t ReturnSatInfo = SAT_INFO_INIT;
 
-	ReturnSatInfo.PRN = GetIntUntilSequence(pRingBuf,",");
-	ReturnSatInfo.Elevation = GetIntUntilSequence(pRingBuf,",");
-	ReturnSatInfo.Azimuth = GetIntUntilSequence(pRingBuf,",");
+		ReturnSatInfo.PRN = GetIntUntilSequence(pRingBuf,",");
+		ReturnSatInfo.Elevation = GetIntUntilSequence(pRingBuf,",");
+		ReturnSatInfo.Azimuth = GetIntUntilSequence(pRingBuf,",");
 	if (IsLastFlag)
 	{
 		ReturnSatInfo.SNR = GetIntUntilSequence(pRingBuf,"*");
@@ -497,6 +522,14 @@ static Neo6mLiteFlex_GPRMC_t GetGPRMC(lwrb_t* pRingBuf)
     return ReturnGPRMC;
 }
 
+static void SkipRedundantCharField (lwrb_t* pRingBuf)
+{
+	if (NEXT_CHAR_READ_ISNT_COMMA) /*Would skip char + comma in normal condition, if there is no char, just skip (by reading) the comma and go on */
+	{
+		lwrb_skip(pRingBuf,2);
+	}
+}
+
 static Neo6mLiteFlex_GPVTG_t GetGPVTG(lwrb_t* pRingBuf)
 {
 	Neo6mLiteFlex_GPVTG_t ReturnGPVTG = GPVTG_INIT;
@@ -504,17 +537,16 @@ static Neo6mLiteFlex_GPVTG_t GetGPVTG(lwrb_t* pRingBuf)
 	SkipUntilEndOfSequence(pRingBuf, "$GPVTG,");
 
 	ReturnGPVTG.TrueTrackDegrees = GetFloatUntilSequence(pRingBuf,",");
-	lwrb_skip(pRingBuf,2);
+	SkipRedundantCharField (pRingBuf);
 	ReturnGPVTG.MagneticTrackDegrees = GetFloatUntilSequence(pRingBuf,",");
-	lwrb_skip(pRingBuf,2);
+	SkipRedundantCharField (pRingBuf);
 	ReturnGPVTG.SpeedKnots = GetFloatUntilSequence(pRingBuf,",");
-	lwrb_skip(pRingBuf,2);
+	SkipRedundantCharField (pRingBuf);
 	ReturnGPVTG.SpeedKph = GetFloatUntilSequence(pRingBuf,",");
-	lwrb_skip(pRingBuf,2);
+	SkipRedundantCharField (pRingBuf);
 	ReturnGPVTG.DataStatus = GetCharBeforeSequence(pRingBuf,"*");
 
 	return ReturnGPVTG;
-
 }
 
 static Neo6mLiteFlex_GPGGA_t GetGPGGA(lwrb_t* pRingBuf)
@@ -563,12 +595,15 @@ static Neo6mLiteFlex_GPGSA_t GetGPGSA(lwrb_t* pRingBuf)
 static Neo6mLiteFlex_GPGSV_t GetGPGSV(lwrb_t* pRingBuf, uint32_t* SatsParsed)
 {
 	Neo6mLiteFlex_GPGSV_t ReturnGPGSV = GPGSV_INIT;
+	char Terminator[2] = {0};
 
 	SkipUntilEndOfSequence(pRingBuf, "$GPGSV,");
 
 	ReturnGPGSV.GPGSVSentences = GetIntUntilSequence(pRingBuf, ",");
 	ReturnGPGSV.SentenceIndex = GetIntUntilSequence(pRingBuf, ",");
-	ReturnGPGSV.SatsInView = GetIntUntilSequence(pRingBuf, ",");
+	lwrb_peek(pRingBuf,2,&Terminator,1); /*GPGSV might end earlier so we need to check what the terminator
+	is for the sats in view field */
+	ReturnGPGSV.SatsInView = GetIntUntilSequence(pRingBuf, Terminator);
 
 	uint32_t SatsToParse = min(4,ReturnGPGSV.SatsInView-*SatsParsed);
 
