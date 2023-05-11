@@ -854,7 +854,7 @@ TEST(Neo6m_FillInTrackingNeo6mMsgStruct,FillsAsExpectedFrom2ndTrackingData)
 	ActualMsg = GetDefaultMsg(pRingBuf);
 	ActualMsg = GetDefaultMsg(pRingBuf);
 
-	ExpectedMsg = ExpectDefaultMsg_2ndTrackingData;
+	ExpectedMsg = DefaultMsg;
 
 	TEST_ASSERT(CompareDefaultMsg(&ActualMsg,&ExpectedMsg));
 }

@@ -15,6 +15,10 @@
  */
 #define MAX_SEQUENCE_SIZE 10
 
+#define DATE_LENGTH 6
+#define TIME_LENGTH 9
+#define COORDINATE_MIN_LENGTH 10
+#define COORDINATE_MAX_LENGTH 11
 
 #define NEXT_CHAR_READ_ISNT_COMMA GetBytesUntilSequence(pRingBuf,",",1)
 #define NEXT_CHAR_READ_ISNT_ASTERISK GetBytesUntilSequence(pRingBuf,"*",1)
@@ -429,17 +433,20 @@ static Neo6mLiteFlex_Time_t GetTime(lwrb_t* pRingBuf)
 {
 	Neo6mLiteFlex_Time_t ReturnTime = TIME_INIT;
 
-	if (NEXT_CHAR_READ_ISNT_COMMA)
-	{
-		ReturnTime.Hours = GetNextBytesAsInt(pRingBuf,2);
-		ReturnTime.Minutes = GetNextBytesAsInt(pRingBuf,2);
-		ReturnTime.Seconds = GetFloatUntilSequence(pRingBuf,",");
-	}
-	else
-	{
-		lwrb_skip(pRingBuf,1);
-	}
+	uint32_t BytesUntilComma = GetBytesUntilSequence(pRingBuf,",",1);
 
+	if (BytesUntilComma != SEQUENCE_NOT_FOUND){
+		if (BytesUntilComma == TIME_LENGTH)
+		{
+			ReturnTime.Hours = GetNextBytesAsInt(pRingBuf,2);
+			ReturnTime.Minutes = GetNextBytesAsInt(pRingBuf,2);
+			ReturnTime.Seconds = GetFloatUntilSequence(pRingBuf,",");
+		}
+		else
+		{
+			lwrb_skip(pRingBuf,BytesUntilComma+1);
+		}
+	}
 	return ReturnTime;
 }
 
@@ -447,19 +454,24 @@ static Neo6mLiteFlex_Date_t GetDate(lwrb_t* pRingBuf)
 {
 	Neo6mLiteFlex_Date_t ReturnDate = DATE_INIT;
 
-	if (NEXT_CHAR_READ_ISNT_COMMA)
-	{
-		ReturnDate.Day = GetNextBytesAsInt(pRingBuf,2);
-		ReturnDate.Month = GetNextBytesAsInt(pRingBuf,2);
-		ReturnDate.Year = GetNextBytesAsInt(pRingBuf,2);
-		if (ReturnDate.Year != UINT16_NOT_FOUND)
+	uint32_t BytesUntilComma = GetBytesUntilSequence(pRingBuf,",",1);
+
+	if (BytesUntilComma != SEQUENCE_NOT_FOUND){
+		if (BytesUntilComma == DATE_LENGTH) /*Since several calls are made for a field without commas separating its elements, it is crucial
+		to check if the field exists, otherwise we'd be reading outside the field alloted for the date */
 		{
-			ReturnDate.Year+= 2000; /*Sadly will only work until 2099 :( */
+			ReturnDate.Day = GetNextBytesAsInt(pRingBuf,2);
+			ReturnDate.Month = GetNextBytesAsInt(pRingBuf,2);
+			ReturnDate.Year = GetNextBytesAsInt(pRingBuf,2);
+			if (ReturnDate.Year != UINT16_NOT_FOUND)
+			{
+				ReturnDate.Year+= 2000; /*Sadly will only work until 2099 :( */
+			}
 		}
-	}
-	else
-	{
-		lwrb_skip(pRingBuf,1);
+		else
+		{
+			lwrb_skip(pRingBuf,BytesUntilComma+1);
+		}
 	}
 	return ReturnDate;
 }
@@ -468,14 +480,18 @@ static Neo6mLiteFlex_DegDecMinutes_t GetDegDecMinutes(lwrb_t* pRingBuf, uint8_t 
 {
 	Neo6mLiteFlex_DegDecMinutes_t ReturnDegDecMinutes = COORDINATE_INIT;
 
-	if (NEXT_CHAR_READ_ISNT_COMMA)
-	{
-		ReturnDegDecMinutes.Degrees = GetNextBytesAsInt(pRingBuf,DegDigits);
-		ReturnDegDecMinutes.DecimalMinutes = GetFloatUntilSequence(pRingBuf,",");
-	}
-	else
-	{
-		lwrb_skip(pRingBuf,1);
+	uint32_t BytesUntilComma = GetBytesUntilSequence(pRingBuf,",",1);
+
+	if (BytesUntilComma != SEQUENCE_NOT_FOUND){
+		if (BytesUntilComma >= COORDINATE_MIN_LENGTH && BytesUntilComma <= COORDINATE_MAX_LENGTH)
+		{
+			ReturnDegDecMinutes.Degrees = GetNextBytesAsInt(pRingBuf,DegDigits);
+			ReturnDegDecMinutes.DecimalMinutes = GetFloatUntilSequence(pRingBuf,",");
+		}
+		else
+		{
+			lwrb_skip(pRingBuf,BytesUntilComma+1);
+		}
 	}
 
 	return ReturnDegDecMinutes;
@@ -564,7 +580,7 @@ static Neo6mLiteFlex_GPGGA_t GetGPGGA(lwrb_t* pRingBuf)
 	ReturnGPGGA.SatsInView = GetIntUntilSequence(pRingBuf, ",");
 	ReturnGPGGA.HDOP = GetFloatUntilSequence(pRingBuf, ",");
 	ReturnGPGGA.AntennaAltitude = GetFloatUntilSequence(pRingBuf, ",");
-	lwrb_skip(pRingBuf,2);
+	SkipRedundantCharField (pRingBuf);
 	ReturnGPGGA.GeoIdalSeparation = GetFloatUntilSequence(pRingBuf, ",");
 	ReturnGPGGA.GpsDataAge = GetFloatUntilSequence(pRingBuf, ",");
 	ReturnGPGGA.RefStationId = GetIntUntilSequence(pRingBuf, "*");
@@ -647,15 +663,15 @@ UT_STATIC Neo6mDefaultMsg_t GetDefaultMsg(lwrb_t* pRingBuf)
 
 	uint32_t GPGSV_SatsParsed = 0;
 
-	ReturnMsg.GPRMC 	= GetGPRMC(pRingBuf);
-	ReturnMsg.GPVTG 	= GetGPVTG(pRingBuf);
-	ReturnMsg.GPGGA 	= GetGPGGA(pRingBuf);
-	ReturnMsg.GPGSA 	= GetGPGSA(pRingBuf);
-	ReturnMsg.GPGSV[0] 	= GetGPGSV(pRingBuf,&GPGSV_SatsParsed);
+	if (GetBytesUntilSequence(pRingBuf, "$GPVTG,", 7) != SEQUENCE_NOT_FOUND) {ReturnMsg.GPRMC 	= GetGPRMC(pRingBuf);}
+	if (GetBytesUntilSequence(pRingBuf, "$GPGGA,", 7) != SEQUENCE_NOT_FOUND) {ReturnMsg.GPVTG 	= GetGPVTG(pRingBuf);}
+	if (GetBytesUntilSequence(pRingBuf, "$GPGSA,", 7) != SEQUENCE_NOT_FOUND) {ReturnMsg.GPGGA 	= GetGPGGA(pRingBuf);}
+	if (GetBytesUntilSequence(pRingBuf, "$GPGSV,", 7) != SEQUENCE_NOT_FOUND) {ReturnMsg.GPGSA 	= GetGPGSA(pRingBuf);}
+	if (GetBytesUntilSequence(pRingBuf, "$GPRMC,", 7) != SEQUENCE_NOT_FOUND) {ReturnMsg.GPGSV[0] 	= GetGPGSV(pRingBuf,&GPGSV_SatsParsed);}
 	if (ReturnMsg.GPGSV[0].GPGSVSentences != UINT16_NOT_FOUND){
 		for (int idx = 1; idx<ReturnMsg.GPGSV[0].GPGSVSentences;idx++)
 		{
-			ReturnMsg.GPGSV[idx] = GetGPGSV(pRingBuf,&GPGSV_SatsParsed);
+			if (GetBytesUntilSequence(pRingBuf, "$GPRMC,", 7) != SEQUENCE_NOT_FOUND) {ReturnMsg.GPGSV[idx] 	= GetGPGSV(pRingBuf,&GPGSV_SatsParsed);}
 		}
 	 }
 	ReturnMsg.GPGLL = GetGPGLL(pRingBuf);

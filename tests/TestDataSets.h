@@ -243,60 +243,6 @@ static Neo6mDefaultMsg_t ExpectDefaultMsg_TrackingData =
 	},
 };
 
-static Neo6mDefaultMsg_t ExpectDefaultMsg_2ndTrackingData =
-{
-	.GPRMC =
-	{
-		.UtcTime =
-		{
-				.Hours = 14,
-				.Minutes = 07,
-				.Seconds = 23,
-		},
-		.Status = 'A',
-		.Latitude =
-		{
-				.Degrees = 27,
-				.DecimalMinutes = 69.50696,
-		},
-		.NS = 'N',
-		.Longitude =
-		{
-				.Degrees = 3,
-				.DecimalMinutes = FLOAT_NOT_FOUND,
-		},
-		.EW = CHAR_NOT_FOUND,
-		.Speed = FLOAT_NOT_FOUND,
-		.TrackMadeGood=FLOAT_NOT_FOUND,
-		.Date =
-		{
-				.Year = UINT16_NOT_FOUND,
-				.Month = UINT16_NOT_FOUND,
-				.Day = UINT16_NOT_FOUND,
-		},
-		.MagneticVariation = FLOAT_NOT_FOUND,
-		.EW_MV = CHAR_NOT_FOUND,
-		.DataStatus = CHAR_NOT_FOUND,
-
-	},
-	.GPVTG = GPVTG_INIT,
-	.GPGGA = GPGGA_INIT,
-	.GPGSA = GPGSA_INIT,
-	.GPGSV = {
-		        GPGSV_INIT,
-		        GPGSV_INIT,
-		        GPGSV_INIT,
-		        GPGSV_INIT,
-		        GPGSV_INIT,
-		        GPGSV_INIT,
-		        GPGSV_INIT,
-		        GPGSV_INIT,
-		        GPGSV_INIT,
-		    },
-	.GPGLL = GPGLL_INIT,
-};
-
-
 //expected struct with non tracking data
 //expected struct with second (incomplete) tracking data
 //expected struct with 1 sv tracking data
