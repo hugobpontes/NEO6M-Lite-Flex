@@ -21,6 +21,35 @@ static size_t NewReadPointer;
 static Neo6mDefaultMsg_t ActualMsg;
 static Neo6mDefaultMsg_t DefaultMsg = NEO6M_MSG_INIT;
 static Neo6mDefaultMsg_t ExpectedMsg;
+static Neo6mMsgArray_t ReceivedMsgArray= {NEO6M_MSG_INIT,NEO6M_MSG_INIT,NEO6M_MSG_INIT,NEO6M_MSG_INIT};
+
+
+#define STD_NEO6M_SETUP {\
+MockNeo6m_Create(20);\
+Neo6m = Neo6mLiteFlex_Create();\
+Neo6mLiteFlex_SetIORead(Neo6m, MockNeo6m_Read);\
+pRingBuf = Neo6mLiteFlex_GetRingBuffPtr(Neo6m);\
+ByteArray = Neo6mLiteFlex_GetByteArray(Neo6m);\
+}
+
+#define NON_TRACKING(ExpectedMsg) { \
+ExpectedMsg.GPRMC.Status = 'V';\
+ExpectedMsg.GPRMC.DataStatus = 'N';\
+ExpectedMsg.GPVTG.DataStatus = 'N';\
+ExpectedMsg.GPGGA.GpsQuality = 0;\
+ExpectedMsg.GPGGA.SatsInView = 0;\
+ExpectedMsg.GPGGA.HDOP = 99.99;\
+ExpectedMsg.GPGSA.ModeMA = 'A';\
+ExpectedMsg.GPGSA.Mode123 = '1';\
+ExpectedMsg.GPGSA.PDOP = 99.99;\
+ExpectedMsg.GPGSA.VDOP = 99.99;\
+ExpectedMsg.GPGSA.HDOP = 99.99;\
+ExpectedMsg.GPGSV[0].GPGSVSentences = 1;\
+ExpectedMsg.GPGSV[0].SentenceIndex = 1;\
+ExpectedMsg.GPGSV[0].SatsInView = 0;\
+ExpectedMsg.GPGLL.DataStatus = 'V';\
+ExpectedMsg.GPGLL.FAAModeIndicator = 'N';\
+}
 
 static bool CompareTime(Neo6mLiteFlex_Time_t* A, Neo6mLiteFlex_Time_t* B)
 {
@@ -377,12 +406,7 @@ TEST_GROUP(Neo6m_IOReadIntoRingBuffer);
 
 TEST_SETUP(Neo6m_IOReadIntoRingBuffer)
 {
-	MockNeo6m_Create(20);
-	Neo6m = Neo6mLiteFlex_Create();
-	Neo6mLiteFlex_SetIORead(Neo6m, MockNeo6m_Read);
-
-	pRingBuf = Neo6mLiteFlex_GetRingBuffPtr(Neo6m);
-	ByteArray = Neo6mLiteFlex_GetByteArray(Neo6m);
+	STD_NEO6M_SETUP
 }
 
 TEST_TEAR_DOWN(Neo6m_IOReadIntoRingBuffer)
@@ -482,12 +506,7 @@ TEST_GROUP(Neo6m_GetBytesUntilSequenceEnd);
 
 TEST_SETUP(Neo6m_GetBytesUntilSequenceEnd)
 {
-	MockNeo6m_Create(20);
-	Neo6m = Neo6mLiteFlex_Create();
-	Neo6mLiteFlex_SetIORead(Neo6m, MockNeo6m_Read);
-
-	pRingBuf = Neo6mLiteFlex_GetRingBuffPtr(Neo6m);
-	ByteArray = Neo6mLiteFlex_GetByteArray(Neo6m);
+	STD_NEO6M_SETUP
 
 	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mTrackingDataSet, NEO6M_BATCH_SIZE);
 	IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
@@ -551,12 +570,7 @@ TEST_GROUP(Neo6m_GetCharBeforeSequence);
 
 TEST_SETUP(Neo6m_GetCharBeforeSequence)
 {
-	MockNeo6m_Create(20);
-	Neo6m = Neo6mLiteFlex_Create();
-	Neo6mLiteFlex_SetIORead(Neo6m, MockNeo6m_Read);
-
-	pRingBuf = Neo6mLiteFlex_GetRingBuffPtr(Neo6m);
-	ByteArray = Neo6mLiteFlex_GetByteArray(Neo6m);
+	STD_NEO6M_SETUP
 
 	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mTrackingDataSet, NEO6M_BATCH_SIZE);
 	IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
@@ -615,12 +629,7 @@ TEST_GROUP(Neo6m_GetFloatUntilSequence);
 
 TEST_SETUP(Neo6m_GetFloatUntilSequence)
 {
-	MockNeo6m_Create(20);
-	Neo6m = Neo6mLiteFlex_Create();
-	Neo6mLiteFlex_SetIORead(Neo6m, MockNeo6m_Read);
-
-	pRingBuf = Neo6mLiteFlex_GetRingBuffPtr(Neo6m);
-	ByteArray = Neo6mLiteFlex_GetByteArray(Neo6m);
+	STD_NEO6M_SETUP
 
 	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mTrackingDataSet, NEO6M_BATCH_SIZE);
 	IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
@@ -694,12 +703,7 @@ TEST_GROUP(Neo6m_GetIntUntilSequence);
 
 TEST_SETUP(Neo6m_GetIntUntilSequence)
 {
-	MockNeo6m_Create(20);
-	Neo6m = Neo6mLiteFlex_Create();
-	Neo6mLiteFlex_SetIORead(Neo6m, MockNeo6m_Read);
-
-	pRingBuf = Neo6mLiteFlex_GetRingBuffPtr(Neo6m);
-	ByteArray = Neo6mLiteFlex_GetByteArray(Neo6m);
+	STD_NEO6M_SETUP
 
 	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mTrackingDataSet, NEO6M_BATCH_SIZE);
 	IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
@@ -773,12 +777,7 @@ TEST_GROUP(Neo6m_GetNextBytesAsInt);
 
 TEST_SETUP(Neo6m_GetNextBytesAsInt)
 {
-	MockNeo6m_Create(20);
-	Neo6m = Neo6mLiteFlex_Create();
-	Neo6mLiteFlex_SetIORead(Neo6m, MockNeo6m_Read);
-
-	pRingBuf = Neo6mLiteFlex_GetRingBuffPtr(Neo6m);
-	ByteArray = Neo6mLiteFlex_GetByteArray(Neo6m);
+	STD_NEO6M_SETUP
 
 	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mTrackingDataSet, NEO6M_BATCH_SIZE);
 	IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
@@ -865,31 +864,11 @@ TEST_GROUP(Neo6m_FillInNonTrackingNeo6mMsgStruct);
 
 TEST_SETUP(Neo6m_FillInNonTrackingNeo6mMsgStruct)
 {
-	MockNeo6m_Create(20);
-	Neo6m = Neo6mLiteFlex_Create();
-	Neo6mLiteFlex_SetIORead(Neo6m, MockNeo6m_Read);
-
-	pRingBuf = Neo6mLiteFlex_GetRingBuffPtr(Neo6m);
-	ByteArray = Neo6mLiteFlex_GetByteArray(Neo6m);
+	STD_NEO6M_SETUP
 
 	ExpectedMsg = DefaultMsg;
 
-	ExpectedMsg.GPRMC.Status = 'V';
-	ExpectedMsg.GPRMC.DataStatus = 'N';
-	ExpectedMsg.GPVTG.DataStatus = 'N';
-	ExpectedMsg.GPGGA.GpsQuality = 0;
-	ExpectedMsg.GPGGA.SatsInView = 0;
-	ExpectedMsg.GPGGA.HDOP = 99.99;
-	ExpectedMsg.GPGSA.ModeMA = 'A';
-	ExpectedMsg.GPGSA.Mode123 = '1';
-	ExpectedMsg.GPGSA.PDOP = 99.99;
-	ExpectedMsg.GPGSA.VDOP = 99.99;
-	ExpectedMsg.GPGSA.HDOP = 99.99;
-	ExpectedMsg.GPGSV[0].GPGSVSentences = 1;
-	ExpectedMsg.GPGSV[0].SentenceIndex = 1;
-	ExpectedMsg.GPGSV[0].SatsInView = 0;
-	ExpectedMsg.GPGLL.DataStatus = 'V';
-	ExpectedMsg.GPGLL.FAAModeIndicator = 'N';
+	NON_TRACKING(ExpectedMsg)
 
 	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mNonTrackingDataSet, NEO6M_BATCH_SIZE);
 	IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
@@ -910,3 +889,80 @@ TEST(Neo6m_FillInNonTrackingNeo6mMsgStruct,FillsAsExpectedFromNonTrackingData)
 	TEST_ASSERT(CompareDefaultMsg(&ActualMsg,&ExpectedMsg));
 }
 
+/*----------------------------------------*/
+TEST_GROUP(Neo6m_FillInTracking1SVNeo6mMsgStruct);
+
+TEST_SETUP(Neo6m_FillInTracking1SVNeo6mMsgStruct)
+{
+	STD_NEO6M_SETUP
+
+	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mTrackingData1SVSet, NEO6M_BATCH_SIZE);
+	IOReadIntoRingBuffer(Neo6m,NEO6M_BATCH_SIZE);
+
+	ExpectedMsg = ExpectDefaultMsg_Tracking1SVData;
+
+	OldReadPointer = pRingBuf->r;
+}
+
+TEST_TEAR_DOWN(Neo6m_FillInTracking1SVNeo6mMsgStruct)
+{
+	MockNeo6m_VerifyComplete();
+	MockNeo6m_Destroy();
+}
+
+TEST(Neo6m_FillInTracking1SVNeo6mMsgStruct,FillsAsExpectedFromTracking1SVData)
+{
+	ActualMsg = GetDefaultMsg(pRingBuf);
+
+	TEST_ASSERT(CompareDefaultMsg(&ActualMsg,&ExpectedMsg));
+}
+
+/*----------------------------------------*/
+TEST_GROUP(Neo6m_MsgArrays);
+
+TEST_SETUP(Neo6m_MsgArrays)
+{
+	STD_NEO6M_SETUP
+}
+
+TEST_TEAR_DOWN(Neo6m_MsgArrays)
+{
+	MockNeo6m_VerifyComplete();
+	MockNeo6m_Destroy();
+}
+
+TEST(Neo6m_MsgArrays,TrackingData)
+{
+	uint32_t MsgsRead;
+
+	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mTrackingDataSet, NEO6M_BATCH_SIZE);
+
+	ExpectedMsg = ExpectDefaultMsg_TrackingData;
+
+	MsgsRead = GetNeo6mMsgs(Neo6m,&ReceivedMsgArray);
+
+	TEST_ASSERT_EQUAL_UINT32(1,MsgsRead);
+	TEST_ASSERT(CompareDefaultMsg(&ReceivedMsgArray[0],&ExpectedMsg));
+
+}
+
+TEST(Neo6m_MsgArrays,NonTrackingData)
+{
+	uint32_t MsgsRead;
+
+	MockNeo6m_ExpectReadAndReturn(NEO6M_BATCH_SIZE, Neo6mNonTrackingDataSet, NEO6M_BATCH_SIZE);
+
+	ExpectedMsg = DefaultMsg;
+
+	NON_TRACKING(ExpectedMsg)
+
+	MsgsRead = GetNeo6mMsgs(Neo6m,&ReceivedMsgArray);
+
+	TEST_ASSERT_EQUAL_UINT32(3,MsgsRead);
+	TEST_ASSERT(CompareDefaultMsg(&ReceivedMsgArray[0],&ExpectedMsg));
+	TEST_ASSERT(CompareDefaultMsg(&ReceivedMsgArray[1],&ExpectedMsg));
+	TEST_ASSERT(CompareDefaultMsg(&ReceivedMsgArray[2],&ExpectedMsg));
+
+}
+
+/*Test for non tracking */

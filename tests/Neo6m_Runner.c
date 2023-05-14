@@ -71,11 +71,20 @@ TEST_GROUP_RUNNER(Neo6m_FillInTrackingNeo6mMsgStruct)
 {
 	RUN_TEST_CASE(Neo6m_FillInTrackingNeo6mMsgStruct, FillsAsExpectedFromTrackingData);
 	RUN_TEST_CASE(Neo6m_FillInTrackingNeo6mMsgStruct, FillsAsExpectedFrom2ndTrackingData);
-	//RUN_TEST_CASE(Neo6m_GetNextBytesAsInt, FillsAsExpectedFromTrackingDataWith1SvMsg);
-	//RUN_TEST_CASE(Neo6m_GetNextBytesAsInt, ReturnsEmptyIfGPRMCNotFound);
 }
 
 TEST_GROUP_RUNNER(Neo6m_FillInNonTrackingNeo6mMsgStruct)
 {
 	RUN_TEST_CASE(Neo6m_FillInNonTrackingNeo6mMsgStruct, FillsAsExpectedFromNonTrackingData);
+}
+
+TEST_GROUP_RUNNER(Neo6m_FillInTracking1SVNeo6mMsgStruct)
+{
+	RUN_TEST_CASE(Neo6m_FillInTracking1SVNeo6mMsgStruct, FillsAsExpectedFromTracking1SVData);
+}
+
+TEST_GROUP_RUNNER(Neo6m_MsgArrays)
+{
+	RUN_TEST_CASE(Neo6m_MsgArrays, TrackingData);
+	RUN_TEST_CASE(Neo6m_MsgArrays, NonTrackingData);
 }

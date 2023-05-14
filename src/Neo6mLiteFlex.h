@@ -177,11 +177,17 @@ typedef struct Neo6mDefaultMsg
 	Neo6mLiteFlex_GPGLL_t GPGLL;
 } Neo6mDefaultMsg_t;
 
+#define MAX_MSGS_IN_BATCH 4
+
+typedef Neo6mDefaultMsg_t Neo6mMsgArray_t[MAX_MSGS_IN_BATCH];
+
 Neo6mLiteFlex_t Neo6mLiteFlex_Create();
 void Neo6mLiteFlex_Destroy(Neo6mLiteFlex_t Neo6mLiteFlex);
 void Neo6mLiteFlex_SetIORead(Neo6mLiteFlex_t Neo6mLiteFlex, IOFunc_t pIORead);
 lwrb_t* Neo6mLiteFlex_GetRingBuffPtr(Neo6mLiteFlex_t Neo6mLiteFlex);
 uint8_t* Neo6mLiteFlex_GetByteArray(Neo6mLiteFlex_t Neo6mLiteFlex);
+
+uint32_t GetNeo6mMsgs(Neo6mLiteFlex_t Neo6mLiteFlex,Neo6mMsgArray_t* Message);
 
 #define TIME_INIT {\
     .Hours = UINT16_NOT_FOUND,\

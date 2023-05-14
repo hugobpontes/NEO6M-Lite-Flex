@@ -200,6 +200,34 @@ static bool PeekIntoStringAndCompare (lwrb_t* pRingBuf, char* Sequence, uint32_t
  * @return Number of bytes in a ring buffer between current position and provided sequence
  *
  */
+
+static uint32_t GetSequenceRepeats(lwrb_t* pRingBuf, char* Sequence, uint32_t SequenceLength)
+{
+	uint32_t Repeats = SEQUENCE_NOT_FOUND;
+
+	uint32_t PositionChecked = 0;
+
+	uint32_t FullBytes = 0;
+
+	if (Sequence && SequenceLength && (SequenceLength<MAX_SEQUENCE_SIZE) && pRingBuf )
+	{
+		FullBytes = lwrb_get_full(pRingBuf);
+		if (SequenceLength < FullBytes)
+		{
+			/*Peek bytes equal to the size of the fed sequence until a match is found*/
+			for (PositionChecked =0;PositionChecked<(FullBytes-SequenceLength);PositionChecked++)
+			{
+				if(PeekIntoStringAndCompare(pRingBuf,Sequence,SequenceLength,PositionChecked))
+				{
+					Repeats++;
+				}
+			}
+
+		}
+	}
+
+	return Repeats;
+}
 static uint32_t GetBytesUntilSequence(lwrb_t* pRingBuf, char* Sequence, uint32_t SequenceLength)
 {
 	uint32_t BytesUntilSeq = SEQUENCE_NOT_FOUND;
@@ -663,18 +691,57 @@ UT_STATIC Neo6mDefaultMsg_t GetDefaultMsg(lwrb_t* pRingBuf)
 
 	uint32_t GPGSV_SatsParsed = 0;
 
-	if (GetBytesUntilSequence(pRingBuf, "$GPVTG,", 7) != SEQUENCE_NOT_FOUND) {ReturnMsg.GPRMC 	= GetGPRMC(pRingBuf);}
-	if (GetBytesUntilSequence(pRingBuf, "$GPGGA,", 7) != SEQUENCE_NOT_FOUND) {ReturnMsg.GPVTG 	= GetGPVTG(pRingBuf);}
-	if (GetBytesUntilSequence(pRingBuf, "$GPGSA,", 7) != SEQUENCE_NOT_FOUND) {ReturnMsg.GPGGA 	= GetGPGGA(pRingBuf);}
-	if (GetBytesUntilSequence(pRingBuf, "$GPGSV,", 7) != SEQUENCE_NOT_FOUND) {ReturnMsg.GPGSA 	= GetGPGSA(pRingBuf);}
-	if (GetBytesUntilSequence(pRingBuf, "$GPRMC,", 7) != SEQUENCE_NOT_FOUND) {ReturnMsg.GPGSV[0] 	= GetGPGSV(pRingBuf,&GPGSV_SatsParsed);}
-	if (ReturnMsg.GPGSV[0].GPGSVSentences != UINT16_NOT_FOUND){
+	if (GetBytesUntilSequence(pRingBuf, "$GPVTG,", 7) != SEQUENCE_NOT_FOUND)
+	{
+		ReturnMsg.GPRMC 	= GetGPRMC(pRingBuf);
+	}
+	if (GetBytesUntilSequence(pRingBuf, "$GPGGA,", 7) != SEQUENCE_NOT_FOUND)
+	{
+		ReturnMsg.GPVTG 	= GetGPVTG(pRingBuf);
+	}
+	if (GetBytesUntilSequence(pRingBuf, "$GPGSA,", 7) != SEQUENCE_NOT_FOUND)
+	{
+		ReturnMsg.GPGGA 	= GetGPGGA(pRingBuf);
+	}
+	if (GetBytesUntilSequence(pRingBuf, "$GPGSV,", 7) != SEQUENCE_NOT_FOUND)
+	{
+		ReturnMsg.GPGSA 	= GetGPGSA(pRingBuf);
+	}
+	if (GetBytesUntilSequence(pRingBuf, "$GPRMC,", 7) != SEQUENCE_NOT_FOUND)
+	{
+		ReturnMsg.GPGSV[0] 	= GetGPGSV(pRingBuf,&GPGSV_SatsParsed);
+	}
+	if (ReturnMsg.GPGSV[0].GPGSVSentences != UINT16_NOT_FOUND)
+	{
 		for (int idx = 1; idx<ReturnMsg.GPGSV[0].GPGSVSentences;idx++)
 		{
 			if (GetBytesUntilSequence(pRingBuf, "$GPRMC,", 7) != SEQUENCE_NOT_FOUND) {ReturnMsg.GPGSV[idx] 	= GetGPGSV(pRingBuf,&GPGSV_SatsParsed);}
 		}
-	 }
+	}
 	ReturnMsg.GPGLL = GetGPGLL(pRingBuf);
 
 	return ReturnMsg;
+}
+
+uint32_t GetNeo6mMsgs(Neo6mLiteFlex_t Neo6mLiteFlex,Neo6mMsgArray_t* Message)
+{
+	uint32_t MessagesRead = 0;
+	uint32_t MessagesAvailable;
+
+	lwrb_t* pRingBuf = &Neo6mLiteFlex->MessageRingBuffer;
+
+	Neo6mLiteFlexStatus_t Status;
+
+	Status = IOReadIntoRingBuffer(Neo6mLiteFlex,NEO6M_BATCH_SIZE);
+
+	if (Status == NEO6M_SUCCESS)
+	{
+		MessagesAvailable = min(GetSequenceRepeats(pRingBuf,"$GPRMC,",7),MAX_MSGS_IN_BATCH);
+		for (MessagesRead=0; MessagesRead<MessagesAvailable;MessagesRead++)
+		{
+				(*Message)[MessagesRead] =  GetDefaultMsg(pRingBuf);
+		}
+	}
+
+	return MessagesRead;
 }

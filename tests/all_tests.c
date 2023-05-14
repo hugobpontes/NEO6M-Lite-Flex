@@ -18,6 +18,8 @@ static void RunAllTests(void)
   RUN_TEST_GROUP(Neo6m_GetNextBytesAsInt);
   RUN_TEST_GROUP(Neo6m_FillInTrackingNeo6mMsgStruct);
   RUN_TEST_GROUP(Neo6m_FillInNonTrackingNeo6mMsgStruct);
+  RUN_TEST_GROUP(Neo6m_FillInTracking1SVNeo6mMsgStruct);
+  RUN_TEST_GROUP(Neo6m_MsgArrays);
 }
 
 int main(int argc, const char * argv[])
