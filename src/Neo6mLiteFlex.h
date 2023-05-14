@@ -1,5 +1,5 @@
 /*
- * Neo6m.h
+ * Neo6mLiteFlex.h
  *
  *  Created on: May 1, 2023
  *      Author: Utilizador

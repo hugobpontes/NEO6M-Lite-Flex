@@ -1,46 +1,13 @@
-/* USER CODE BEGIN Header */
-/**
-  ******************************************************************************
-  * @file           : main.c
-  * @brief          : Main program body
-  ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2023 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
-  */
-/* USER CODE END Header */
-/* Includes ------------------------------------------------------------------*/
 #include "main.h"
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "lwrb.h"
+#include "Neo6mLiteFlex.h"
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdatomic.h>
-/* USER CODE END Includes */
 
-/* Private typedef -----------------------------------------------------------*/
-/* USER CODE BEGIN PTD */
-
-/* USER CODE END PTD */
-
-/* Private define ------------------------------------------------------------*/
-/* USER CODE BEGIN PD */
-/* USER CODE END PD */
-
-/* Private macro -------------------------------------------------------------*/
-/* USER CODE BEGIN PM */
-
-/* USER CODE END PM */
-
-/* Private variables ---------------------------------------------------------*/
 
 UART_HandleTypeDef huart4;
 UART_HandleTypeDef huart2;
@@ -77,8 +44,6 @@ static volatile atomic_bool Neo6mUartRingBufBusy = ATOMIC_VAR_INIT(false);
 static volatile bool preempt_flag = false;
 static volatile bool force_flag = false;
 
-static uint8_t Neo6mDataBuf[NEO_6M_TYPICAL_FRAME_SIZE];
-
 size_t Stm32_IORead(void* DataPtr, size_t ReadSize)
 {
 	atomic_store_explicit(&Neo6mUartRingBufBusy, true, memory_order_seq_cst);
@@ -96,27 +61,12 @@ int main(void)
 {
   /* USER CODE BEGIN 1 */
 
-  /* USER CODE END 1 */
-
-  /* MCU Configuration--------------------------------------------------------*/
-
-  /* Reset of all peripherals, Initializes the Flash interface and the Systick. */
   HAL_Init();
 
   lwrb_init(&Neo6mUartRingBuf, Neo6mUartBuf, sizeof(Neo6mUartBuf)); /* Initialize buffer */
 
-  /* USER CODE BEGIN Init */
-
-  /* USER CODE END Init */
-
-  /* Configure the system clock */
   SystemClock_Config();
 
-  /* USER CODE BEGIN SysInit */
-
-  /* USER CODE END SysInit */
-
-  /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_UART4_Init();
   MX_USART2_UART_Init();
@@ -125,11 +75,20 @@ int main(void)
   HAL_UART_Receive_IT(&huart2, Uart2RxBuf, UART_RX_INCREMENT);
   /* USER CODE END 2 */
 
-  char Msg1[] = "Welcome to neo6m IO read function test! \n ";
+  Neo6mLiteFlex_t Neo6m;
+  Neo6m = Neo6mLiteFlex_Create();
+  Neo6mLiteFlex_SetIORead(Neo6m, Stm32_IORead);\
+
+  Neo6mMsgArray_t ReceivedMsgArray= {NEO6M_MSG_INIT,NEO6M_MSG_INIT,NEO6M_MSG_INIT,NEO6M_MSG_INIT};
+
+  uint32_t MsgsRead;
+  uint32_t Time1;
+  uint32_t Time2;
+
+  char Msg1[] = "\n \n !!!!!!!!  Chunk Available !!!!!!!! \n \n ";
   char Msg2[] = "\n \n !!!!!!!!  BUFFER HAD TO BE PREEMPTIVELY RESET !!!!!!!! \n \n ";
   char Msg3[] = "\n \n !!!!!!!!  BUFFER HAD TO BE FORCIBLY RESET !!!!!!!! \n \n ";
-
-  HAL_UART_Transmit(&huart4, (uint8_t *)Msg1, sizeof(Msg1), 100);
+  char TimeMsg[20];
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
@@ -149,13 +108,21 @@ int main(void)
 	if (atomic_load_explicit(&Neo6mDataReadyFlag, memory_order_acquire))
 	{
 		//lib func start
-		Stm32_IORead(Neo6mDataBuf,NEO_6M_TYPICAL_FRAME_SIZE);
+		MsgsRead = GetNeo6mMsgs(Neo6m,&ReceivedMsgArray);
+		atomic_store_explicit(&Neo6mDataReadyFlag, false, memory_order_seq_cst);
+		HAL_UART_Transmit(&huart4, (uint8_t *)Msg1, sizeof(Msg1), 100);//This race condition is not a serious problem, since it only causes 10B to be added */
 		//lib func end
-		HAL_UART_Transmit(&huart4, Neo6mDataBuf, NEO_6M_TYPICAL_FRAME_SIZE, 200);
-		atomic_store_explicit(&Neo6mDataReadyFlag, false, memory_order_seq_cst); //This race condition is not a serious problem, since it only causes 10B to be added */
+		for (int idx = 0; idx<MsgsRead;idx++)
+		{
+			sprintf(TimeMsg,"Time: %.2d:%.2d:%f \n", ReceivedMsgArray[idx].GPGGA.UtcTime.Hours,ReceivedMsgArray[idx].GPGGA.UtcTime.Minutes,ReceivedMsgArray[idx].GPGGA.UtcTime.Seconds);
+			HAL_UART_Transmit(&huart4,(uint8_t*)TimeMsg, 20, 200);
+		}
+
 	}
     /* USER CODE BEGIN 3 */
   }
+
+  Neo6mLiteFlex_Destroy(Neo6m);
   /* USER CODE END 3 */
 }
 
@@ -233,8 +200,6 @@ void SystemClock_Config(void)
   {
     Error_Handler();
   }
-
-
 }
 
 /**
