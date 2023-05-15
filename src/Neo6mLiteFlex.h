@@ -1,10 +1,3 @@
-/*
- * Neo6mLiteFlex.h
- *
- *  Created on: May 1, 2023
- *      Author: Utilizador
- */
-
 #ifndef NEO6MLITEFLEX_H_
 #define NEO6MLITEFLEX_H_
 
@@ -38,7 +31,6 @@ typedef enum
  * @return Amount of bytes read
  */
 typedef size_t (*IOFunc_t)(void*,size_t);
-
 /**
  * @brief Amount of bytes that are read from the UART interface when the acquisition of a message is requested by the user.
  * This size correponds to an amount of bytes in which it is guaranteed that at least one full default neo6m message is present.
@@ -54,7 +46,6 @@ typedef size_t (*IOFunc_t)(void*,size_t);
  * @brief Size of the neo 6m message buffer. Size of defined batch + safety margin
  */
 #define NEO6M_BATCH_BUFFER_SIZE NEO6M_BATCH_SIZE+NEO6M_BUFFER_SAFETY_MARGIN
-
 /*Value to be returned by some functions when sequence could not be found*/
 #define SEQUENCE_NOT_FOUND 0xFFFFFFFF
 /*Value to be returned by some functions when a valid char could not be found*/
@@ -67,28 +58,35 @@ typedef size_t (*IOFunc_t)(void*,size_t);
  * @brief Abstract data type that acts as a handle to an Neo6mLiteFlex instance
  */
 typedef struct Neo6mLiteFlexStruct* Neo6mLiteFlex_t;
-
+/**
+ * @brief Struct to hold utc time data as extracted from an NMEA 0183 message
+ */
 typedef struct Time
 {
 	uint16_t Hours;
 	uint16_t Minutes;
 	float Seconds;
 } Neo6mLiteFlex_Time_t;
-
+/**
+ * @brief Struct to hold date data as extracted from an NMEA 0183 message
+ */
 typedef struct Date
 {
 	uint16_t Year;
 	uint16_t Month;
 	uint16_t Day;
 } Neo6mLiteFlex_Date_t;
-
+/**
+ * @brief Struct to hold degree+decimal minutes data as extracted from an NMEA 0183 message
+ */
 typedef struct DegDecMinutes
 {
 	uint16_t Degrees;
 	float DecimalMinutes;
 } Neo6mLiteFlex_DegDecMinutes_t;
-
-
+/**
+ * @brief Struct to hold data present in an GPRMC NMEA 0183 message
+ */
 typedef struct GPRMC
 {
 	Neo6mLiteFlex_Time_t UtcTime;
@@ -104,7 +102,9 @@ typedef struct GPRMC
 	char EW_MV;
 	char DataStatus;
 } Neo6mLiteFlex_GPRMC_t;
-
+/**
+ * @brief Struct to hold data present in an GPVTG NMEA 0183 message
+ */
 typedef struct GPVTG
 {
 	float TrueTrackDegrees;
@@ -113,7 +113,9 @@ typedef struct GPVTG
 	float SpeedKph;
 	char DataStatus;
 } Neo6mLiteFlex_GPVTG_t;
-
+/**
+ * @brief Struct to hold data present in an GPGGA NMEA 0183 message
+ */
 typedef struct GPGGA
 {
 	Neo6mLiteFlex_Time_t UtcTime;
@@ -129,7 +131,9 @@ typedef struct GPGGA
 	float GpsDataAge;
 	uint16_t RefStationId;
 } Neo6mLiteFlex_GPGGA_t;
-
+/**
+ * @brief Struct to hold data present in an GPGSA NMEA 0183 message
+ */
 typedef struct GPGSA
 {
 	char ModeMA;
@@ -139,7 +143,9 @@ typedef struct GPGSA
 	float HDOP;
 	float VDOP;
 } Neo6mLiteFlex_GPGSA_t;
-
+/**
+ * @brief Struct to hold "sat info" data (PRN,Elevation,Azimuth,SNR)
+ */
 typedef struct GPGSV_SatInfo
 {
 	uint16_t PRN;
@@ -147,7 +153,9 @@ typedef struct GPGSV_SatInfo
 	uint16_t Azimuth;
 	uint16_t SNR;
 } Neo6mLiteFlex_GPGSV_SatInfo_t;
-
+/**
+ * @brief Struct to hold data present in an GPGSV NMEA 0183 message
+ */
 typedef struct GPGSV
 {
 	uint16_t GPGSVSentences;
@@ -155,7 +163,9 @@ typedef struct GPGSV
 	uint16_t SatsInView;
 	Neo6mLiteFlex_GPGSV_SatInfo_t SatInfo[4];
 } Neo6mLiteFlex_GPGSV_t;
-
+/**
+ * @brief Struct to hold data present in an GPGLL NMEA 0183 message
+ */
 typedef struct GPGLL
 {
 	Neo6mLiteFlex_DegDecMinutes_t Latitude;
@@ -166,7 +176,9 @@ typedef struct GPGLL
 	char DataStatus;
 	char FAAModeIndicator;
 } Neo6mLiteFlex_GPGLL_t;
-
+/**
+ * @brief Struct to hold data present in the default data that NEO-6M outputs
+ */
 typedef struct Neo6mDefaultMsg
 {
 	Neo6mLiteFlex_GPRMC_t GPRMC;
@@ -176,9 +188,14 @@ typedef struct Neo6mDefaultMsg
 	Neo6mLiteFlex_GPGSV_t GPGSV[9];
 	Neo6mLiteFlex_GPGLL_t GPGLL;
 } Neo6mDefaultMsg_t;
-
+/**
+ * @brief Max messages that can be retrieved in a single call to GetNeo6mMsgs
+ */
 #define MAX_MSGS_IN_BATCH 4
-
+/**
+ * @brief Type for an array that holds MAX_MSGS_IN_BATCH default messages
+ * (solely created to be passed to the GetNeo6mMsgs function)
+ */
 typedef Neo6mDefaultMsg_t Neo6mMsgArray_t[MAX_MSGS_IN_BATCH];
 
 Neo6mLiteFlex_t Neo6mLiteFlex_Create();
@@ -188,6 +205,8 @@ lwrb_t* Neo6mLiteFlex_GetRingBuffPtr(Neo6mLiteFlex_t Neo6mLiteFlex);
 uint8_t* Neo6mLiteFlex_GetByteArray(Neo6mLiteFlex_t Neo6mLiteFlex);
 
 uint32_t GetNeo6mMsgs(Neo6mLiteFlex_t Neo6mLiteFlex,Neo6mMsgArray_t* Message);
+
+/* INITIAL/DEFAULT VALUES FOR THE STRUCTS DEFINED ABOVE */
 
 #define TIME_INIT {\
     .Hours = UINT16_NOT_FOUND,\
