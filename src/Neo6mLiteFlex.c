@@ -833,7 +833,7 @@ UT_STATIC Neo6mDefaultMsg_t GetDefaultMsg(lwrb_t* pRingBuf)
  *
  * @returns Number of default messages read
  */
-uint32_t GetNeo6mMsgs(Neo6mLiteFlex_t Neo6mLiteFlex,Neo6mMsgArray_t* Message)
+uint32_t Neo6mLiteFlex_GetNeo6mMsgs(Neo6mLiteFlex_t Neo6mLiteFlex,Neo6mMsgArray_t* Message)
 {
 	uint32_t MessagesRead = 0;
 	uint32_t MessagesAvailable;

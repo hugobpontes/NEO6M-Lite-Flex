@@ -939,7 +939,7 @@ TEST(Neo6m_MsgArrays,TrackingData)
 
 	ExpectedMsg = ExpectDefaultMsg_TrackingData;
 
-	MsgsRead = GetNeo6mMsgs(Neo6m,&ReceivedMsgArray);
+	MsgsRead = Neo6mLiteFlex_GetNeo6mMsgs(Neo6m,&ReceivedMsgArray);
 
 	TEST_ASSERT_EQUAL_UINT32(1,MsgsRead);
 	TEST_ASSERT(CompareDefaultMsg(&ReceivedMsgArray[0],&ExpectedMsg));
@@ -956,7 +956,7 @@ TEST(Neo6m_MsgArrays,NonTrackingData)
 
 	NON_TRACKING(ExpectedMsg)
 
-	MsgsRead = GetNeo6mMsgs(Neo6m,&ReceivedMsgArray);
+	MsgsRead = Neo6mLiteFlex_GetNeo6mMsgs(Neo6m,&ReceivedMsgArray);
 
 	TEST_ASSERT_EQUAL_UINT32(3,MsgsRead);
 	TEST_ASSERT(CompareDefaultMsg(&ReceivedMsgArray[0],&ExpectedMsg));
